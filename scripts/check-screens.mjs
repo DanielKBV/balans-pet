@@ -1,4 +1,4 @@
-// Screenshots pages at 6 widths and fails if any page scrolls horizontally.
+// Screenshots pages at 6 widths in light and dark theme and fails if any page scrolls horizontally.
 // Usage: node scripts/check-screens.mjs [/path ...]
 // BASE_URL=http://localhost:3000 uses an already running server;
 // otherwise a temporary `next dev` is started and stopped afterwards.
@@ -7,6 +7,8 @@ import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
 
 const WIDTHS = [360, 390, 768, 1024, 1440, 1920];
+// The app follows the system theme by default, so the browser colour scheme switches it.
+const THEMES = ["light", "dark"];
 const HEIGHT = 900;
 const PORT = 3100;
 const OUT_DIR = ".screenshots";
@@ -56,21 +58,23 @@ try {
 
   for (const path of paths) {
     const slug = path === "/" ? "home" : path.replace(/^\/|\/$/g, "").replace(/\//g, "_");
-    for (const width of WIDTHS) {
-      const page = await browser.newPage({ viewport: { width, height: HEIGHT } });
+    for (const theme of THEMES) for (const width of WIDTHS) {
+      const page = await browser.newPage({ viewport: { width, height: HEIGHT }, colorScheme: theme });
       await page.goto(baseUrl + path, { waitUntil: "networkidle" });
+      // Charts measure their container and animate after load; give them a moment.
+      await page.waitForTimeout(1000);
       const { scrollWidth, innerWidth } = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         innerWidth: window.innerWidth,
       }));
-      const file = `${OUT_DIR}/${slug}-${width}.png`;
+      const file = `${OUT_DIR}/${slug}-${theme}-${width}.png`;
       await page.screenshot({ path: file, fullPage: true });
       await page.close();
 
       const ok = scrollWidth <= innerWidth;
-      if (!ok) failures.push(`${path} @ ${width}px`);
+      if (!ok) failures.push(`${path} @ ${width}px ${theme}`);
       console.log(
-        `${ok ? "OK  " : "FAIL"} ${path} @ ${width}px  ` +
+        `${ok ? "OK  " : "FAIL"} ${path} @ ${width}px ${theme.padEnd(5)}  ` +
           (ok ? "no horizontal scroll" : `horizontal scroll: ${scrollWidth}px > ${innerWidth}px`) +
           `  -> ${file}`,
       );
