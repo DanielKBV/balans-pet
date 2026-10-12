@@ -226,6 +226,22 @@
 }
 
 /* Type scale. Body text is 16px everywhere; only chart axis labels go below 14px. */
+/* Landing headline only; product pages stop at text-title. */
+@utility text-hero {
+  font-size: 2rem; /* 32px phone */
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  @media (width >= 48rem) {
+    font-size: 2.5rem; /* 40px */
+    line-height: 1.1;
+  }
+  @media (width >= 64rem) {
+    font-size: 3rem; /* 48px */
+    line-height: 1.05;
+  }
+}
+
 @utility text-display {
   font-size: 1.75rem; /* 28px phone */
   line-height: 1.15;

@@ -42,3 +42,9 @@ next-env.d.ts
 
 # screen check screenshots
 /.screenshots
+
+# local copies of agent skills
+/.agents
+
+# impeccable design critique snapshots
+/.impeccable

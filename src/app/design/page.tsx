@@ -92,6 +92,7 @@ const colorGroups: { title: string; tokens: [string, string][] }[] = [
 ]
 
 const typeScale = [
+  { cls: "text-hero", meta: "32 → 40 → 48 px · 600 · только лендинг", sample: "Прибыль считается сама" },
   { cls: "text-display", meta: "28 → 36 px · 600 · цифры", sample: formatSom(1234567) },
   { cls: "text-title", meta: "24 → 28 px · 600", sample: "Операции за октябрь" },
   { cls: "text-heading", meta: "20 px · 600", sample: "Расходы по категориям" },
