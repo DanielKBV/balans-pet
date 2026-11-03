@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/password-input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -266,6 +267,10 @@ export default function DesignPage() {
               <div className="flex flex-col gap-2">
                 <Label htmlFor="disabled">Неактивное поле</Label>
                 <Input id="disabled" disabled defaultValue="Владелец" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="password-demo">Пароль</Label>
+                <PasswordInput id="password-demo" defaultValue="avtomoika2026" />
               </div>
             </Card>
           </div>

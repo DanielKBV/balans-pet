@@ -1,0 +1,133 @@
+"use client"
+
+import { useActionState, useState } from "react"
+import { useSearchParams } from "next/navigation"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/password-input"
+import { Label } from "@/components/ui/label"
+import { authAction, type AuthMode, type AuthState } from "./actions"
+
+const copy: Record<AuthMode, { title: string; submit: string; pending: string }> = {
+  signin: { title: "Вход в Balans", submit: "Войти", pending: "Входим…" },
+  signup: { title: "Регистрация", submit: "Зарегистрироваться", pending: "Создаём аккаунт…" },
+  forgot: { title: "Восстановление пароля", submit: "Отправить ссылку", pending: "Отправляем…" },
+}
+
+const linkClass =
+  "rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+
+export function LoginForm() {
+  const linkExpired = useSearchParams().get("error") === "link"
+  const [mode, setMode] = useState<AuthMode>(linkExpired ? "forgot" : "signin")
+  // Controlled: React resets uncontrolled fields after a form action, and the
+  // email should survive both a failed attempt and a mode switch.
+  const [email, setEmail] = useState("")
+  const initial: AuthState = linkExpired && mode === "forgot"
+    ? { error: "Ссылка устарела или уже использована. Запросите новую" }
+    : {}
+
+  // key: switching mode starts with a clean form state
+  return (
+    <AuthForm key={mode} mode={mode} setMode={setMode} initial={initial} email={email} setEmail={setEmail} />
+  )
+}
+
+function AuthForm({
+  mode,
+  setMode,
+  initial,
+  email,
+  setEmail,
+}: {
+  mode: AuthMode
+  setMode: (mode: AuthMode) => void
+  initial: AuthState
+  email: string
+  setEmail: (email: string) => void
+}) {
+  const [state, formAction, isPending] = useActionState<AuthState, FormData>(authAction, initial)
+  const { title, submit, pending } = copy[mode]
+
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-title">{title}</h1>
+
+      <form action={formAction} className="flex flex-col gap-4">
+        <input type="hidden" name="mode" value={mode} />
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email">Почта</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            spellCheck={false}
+            placeholder="name@mail.kg"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        {mode !== "forgot" && (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <Label htmlFor="password">Пароль</Label>
+              {mode === "signin" && (
+                <button type="button" className={`${linkClass} text-small`} onClick={() => setMode("forgot")}>
+                  Забыли пароль?
+                </button>
+              )}
+            </div>
+            <PasswordInput
+              id="password"
+              name="password"
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              minLength={mode === "signup" ? 6 : undefined}
+              required
+            />
+            {mode === "signup" && (
+              <p className="text-small text-muted-foreground">Не меньше 6 символов</p>
+            )}
+          </div>
+        )}
+
+        {state.error && (
+          <p role="alert" className="text-small text-destructive-text">
+            {state.error}
+          </p>
+        )}
+        {state.message && (
+          <p role="status" className="text-small text-income">
+            {state.message}
+          </p>
+        )}
+
+        <Button type="submit" disabled={isPending} className="w-full">
+          {isPending ? pending : submit}
+        </Button>
+      </form>
+
+      <p className="text-small text-muted-foreground">
+        {mode === "signin" ? (
+          <>
+            Нет аккаунта?{" "}
+            <button type="button" className={linkClass} onClick={() => setMode("signup")}>
+              Зарегистрироваться
+            </button>
+          </>
+        ) : (
+          <>
+            {mode === "signup" ? "Уже есть аккаунт? " : "Вспомнили пароль? "}
+            <button type="button" className={linkClass} onClick={() => setMode("signin")}>
+              Войти
+            </button>
+          </>
+        )}
+      </p>
+    </div>
+  )
+}

@@ -5,7 +5,7 @@ import { Logo } from "@/components/logo"
 import { Money } from "@/components/money"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { CabinetPreview } from "./cabinet-preview"
 
@@ -85,12 +85,12 @@ function CallToAction() {
     <div className="flex flex-col gap-3">
       <p className="flex items-center gap-2 text-small text-muted-foreground">
         <ClockIcon aria-hidden className="size-4 shrink-0" />
-        Регистрация и демо откроются в ближайших обновлениях
+        Демо откроется в ближайших обновлениях
       </p>
       <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-        <Button size="lg" disabled>
+        <Link href="/login" className={buttonVariants({ size: "lg" })}>
           Попробовать бесплатно
-        </Button>
+        </Link>
         <Button size="lg" variant="outline" disabled>
           Посмотреть демо
         </Button>
@@ -112,9 +112,9 @@ export default function Home() {
           </Link>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Button variant="ghost" disabled>
+            <Link href="/login" className={buttonVariants({ variant: "ghost" })}>
               Войти
-            </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -167,14 +167,22 @@ export default function Home() {
       <footer className="border-t">
         <div className="page-container flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-6 text-small text-muted-foreground">
           <p>Pet-проект Даниэла</p>
-          <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            Код на GitHub
-          </a>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <Link
+              href="/privacy"
+              className="rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              Политика конфиденциальности
+            </Link>
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              Код на GitHub
+            </a>
+          </div>
         </div>
       </footer>
     </>

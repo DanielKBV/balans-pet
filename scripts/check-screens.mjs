@@ -2,6 +2,7 @@
 // Usage: node scripts/check-screens.mjs [/path ...]
 // BASE_URL=http://localhost:3000 uses an already running server;
 // otherwise a temporary `next dev` is started and stopped afterwards.
+// --auth signs in first with TEST_EMAIL and TEST_PASSWORD from .env.local (cabinet pages).
 import { spawn, execSync } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
@@ -13,7 +14,10 @@ const HEIGHT = 900;
 const PORT = 3100;
 const OUT_DIR = ".screenshots";
 
-const paths = process.argv.length > 2 ? process.argv.slice(2) : ["/"];
+const args = process.argv.slice(2);
+const useAuth = args.includes("--auth");
+const pathArgs = args.filter((arg) => arg !== "--auth");
+const paths = pathArgs.length ? pathArgs : ["/"];
 let baseUrl = process.env.BASE_URL;
 let server;
 
@@ -27,6 +31,19 @@ async function waitForServer(url, timeoutMs = 120_000) {
     await new Promise((r) => setTimeout(r, 1000));
   }
   throw new Error(`Server did not start at ${url}`);
+}
+
+async function signIn(browser) {
+  process.loadEnvFile(".env.local");
+  const page = await browser.newPage();
+  await page.goto(`${baseUrl}/login`, { waitUntil: "networkidle" });
+  await page.fill("#email", process.env.TEST_EMAIL);
+  await page.fill("#password", process.env.TEST_PASSWORD);
+  await page.click('button[type="submit"]');
+  await page.waitForURL((url) => url.pathname !== "/login");
+  const storageState = await page.context().storageState();
+  await page.close();
+  return storageState;
 }
 
 function stopServer() {
@@ -55,11 +72,12 @@ try {
   await waitForServer(baseUrl);
   await mkdir(OUT_DIR, { recursive: true });
   const browser = await chromium.launch();
+  const storageState = useAuth ? await signIn(browser) : undefined;
 
   for (const path of paths) {
     const slug = path === "/" ? "home" : path.replace(/^\/|\/$/g, "").replace(/\//g, "_");
     for (const theme of THEMES) for (const width of WIDTHS) {
-      const page = await browser.newPage({ viewport: { width, height: HEIGHT }, colorScheme: theme });
+      const page = await browser.newPage({ viewport: { width, height: HEIGHT }, colorScheme: theme, storageState });
       await page.goto(baseUrl + path, { waitUntil: "networkidle" });
       // Charts measure their container and animate after load; give them a moment.
       await page.waitForTimeout(1000);

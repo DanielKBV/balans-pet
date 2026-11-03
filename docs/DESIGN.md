@@ -224,11 +224,12 @@
 | Логотип | `components/logo.tsx` | Белая «B» в квадрате `primary` с `rounded-lg`, рядом «Balans» 600 |
 | Кнопка | `components/ui/button.tsx` | Варианты: основная (`default`), второстепенная (`outline`), опасная (`destructive`), призрачная (`ghost`). Высота `h-control`. Одна основная кнопка на экран |
 | Поле, подпись, ошибка | `components/ui/input.tsx`, `label.tsx` | 16 px текст, `h-control`, граница `input` |
+| Поле пароля | `components/password-input.tsx` | Как поле, плюс справа внутри кнопка-глаз «Показать / Скрыть пароль»: иконка `muted-foreground` 20 px без подложки, область нажатия `size-control` |
 | Карточка с цифрой | `components/stat-card.tsx` | Подпись `text-small`, сумма `text-display`, изменение к прошлому месяцу со знаком и стрелкой. Без иконок в кружках |
 | Сумма | `components/money.tsx` | `formatSom()` + tabular + цвет по типу |
 | Бейдж «Доход / Расход» | `components/ui/badge.tsx` | Фон `*-subtle`, текст `income`/`expense`, `rounded-md` |
 | Таблица | `components/ui/table.tsx` | Без зебры, строки ≥ 40 px, суммы справа. На телефоне превращается в карточки-строки |
-| Меню слева / нижнее меню | `components/app-nav.tsx` | Активный пункт: `primary-subtle` + `primary-text`. Пункты ≥ 40 px |
+| Меню слева / нижнее меню | `components/app-nav.tsx`, в кабинете через `components/cabinet-nav.tsx` (активный пункт по адресу страницы) | Активный пункт: `primary-subtle` + `primary-text`. Пункты ≥ 40 px |
 | Шапка | там же | 56 px, граница снизу, переключатель темы справа |
 | Диалог | `components/ui/dialog.tsx` | `rounded-2xl`, `shadow-dialog`, затемнение + `backdrop-blur-sm`. Кнопки в ряд справа (на телефоне делят ширину поровну), если не помещаются — переносятся |
 | Уведомление | `components/ui/sonner.tsx` | Внизу справа, `shadow-popover`. Успех: `income-subtle` + `income`. Ошибка: `destructive-subtle` + `destructive-text`. Предупреждение: `warning-subtle` + `warning`. Обычное: `popover`. Иконка всегда есть, цвет не единственный признак. Крестик справа внутри уведомления закрывает его сразу (значок 28 px, область нажатия 44 px) |
