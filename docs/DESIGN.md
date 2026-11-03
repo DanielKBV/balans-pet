@@ -224,6 +224,7 @@
 | Логотип | `components/logo.tsx` | Белая «B» в квадрате `primary` с `rounded-lg`, рядом «Balans» 600 |
 | Кнопка | `components/ui/button.tsx` | Варианты: основная (`default`), второстепенная (`outline`), опасная (`destructive`), призрачная (`ghost`). Высота `h-control`. Одна основная кнопка на экран |
 | Поле, подпись, ошибка | `components/ui/input.tsx`, `label.tsx` | 16 px текст, `h-control`, граница `input` |
+| Вход через Google | `components/google-icon.tsx` + `Button variant="outline"` | Второстепенная кнопка во всю ширину под формой почты, цветная «G» 20 px (цвета Google не менять), текст «Войти через Google». Над ней разделитель «или»: две линии `border` и `text-small muted-foreground` |
 | Поле пароля | `components/password-input.tsx` | Как поле, плюс справа внутри кнопка-глаз «Показать / Скрыть пароль»: иконка `muted-foreground` 20 px без подложки, область нажатия `size-control` |
 | Карточка с цифрой | `components/stat-card.tsx` | Подпись `text-small`, сумма `text-display`, изменение к прошлому месяцу со знаком и стрелкой. Без иконок в кружках |
 | Сумма | `components/money.tsx` | `formatSom()` + tabular + цвет по типу |

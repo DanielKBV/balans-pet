@@ -16,5 +16,7 @@ export async function GET(request: NextRequest) {
     if (!error) return NextResponse.redirect(`${origin}${safeNext}`)
   }
 
-  return NextResponse.redirect(`${origin}/login?error=link`)
+  // Email links carry `next`; a return from Google (including a cancelled one) does not.
+  const reason = searchParams.has("next") ? "link" : "google"
+  return NextResponse.redirect(`${origin}/login?error=${reason}`)
 }

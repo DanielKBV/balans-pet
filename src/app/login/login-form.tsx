@@ -1,13 +1,15 @@
 "use client"
 
 import { useActionState, useState } from "react"
+import { useFormStatus } from "react-dom"
 import { useSearchParams } from "next/navigation"
 
+import { GoogleIcon } from "@/components/google-icon"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/password-input"
 import { Label } from "@/components/ui/label"
-import { authAction, type AuthMode, type AuthState } from "./actions"
+import { authAction, signInWithGoogle, type AuthMode, type AuthState } from "./actions"
 
 const copy: Record<AuthMode, { title: string; submit: string; pending: string }> = {
   signin: { title: "Вход в Balans", submit: "Войти", pending: "Входим…" },
@@ -19,14 +21,17 @@ const linkClass =
   "rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
 
 export function LoginForm() {
-  const linkExpired = useSearchParams().get("error") === "link"
+  const urlError = useSearchParams().get("error")
+  const linkExpired = urlError === "link"
   const [mode, setMode] = useState<AuthMode>(linkExpired ? "forgot" : "signin")
   // Controlled: React resets uncontrolled fields after a form action, and the
   // email should survive both a failed attempt and a mode switch.
   const [email, setEmail] = useState("")
   const initial: AuthState = linkExpired && mode === "forgot"
     ? { error: "Ссылка устарела или уже использована. Запросите новую" }
-    : {}
+    : urlError === "google" && mode === "signin"
+      ? { error: "Не удалось войти через Google. Попробуйте ещё раз" }
+      : {}
 
   // key: switching mode starts with a clean form state
   return (
@@ -111,6 +116,19 @@ function AuthForm({
         </Button>
       </form>
 
+      {mode !== "forgot" && (
+        <>
+          <div className="flex items-center gap-3 text-small text-muted-foreground">
+            <span aria-hidden className="h-px flex-1 bg-border" />
+            или
+            <span aria-hidden className="h-px flex-1 bg-border" />
+          </div>
+          <form action={signInWithGoogle}>
+            <GoogleButton />
+          </form>
+        </>
+      )}
+
       <p className="text-small text-muted-foreground">
         {mode === "signin" ? (
           <>
@@ -129,5 +147,15 @@ function AuthForm({
         )}
       </p>
     </div>
+  )
+}
+
+function GoogleButton() {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" variant="outline" disabled={pending} className="w-full">
+      <GoogleIcon className="size-5" />
+      {pending ? "Переходим в Google…" : "Войти через Google"}
+    </Button>
   )
 }

@@ -4,6 +4,7 @@ import { PlusIcon, ReceiptTextIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatSom } from "@/lib/format"
 import { AppHeader, BottomNav, Sidebar } from "@/components/app-nav"
+import { GoogleIcon } from "@/components/google-icon"
 import { Logo } from "@/components/logo"
 import { Money } from "@/components/money"
 import { StatCard, StatCardSkeleton } from "@/components/stat-card"
@@ -239,6 +240,10 @@ export default function DesignPage() {
               <Button disabled>Неактивна</Button>
               <Button variant="outline" size="icon" aria-label="Добавить">
                 <PlusIcon />
+              </Button>
+              <Button variant="outline">
+                <GoogleIcon className="size-5" />
+                Войти через Google
               </Button>
             </div>
             <p className="text-small text-muted-foreground">

@@ -51,6 +51,17 @@ export async function authAction(_prev: AuthState, formData: FormData): Promise<
   redirect("/dashboard")
 }
 
+/** Sends the user to Google; they come back through /auth/callback. */
+export async function signInWithGoogle() {
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${await siteOrigin()}/auth/callback` },
+  })
+  if (error) redirect("/login?error=google")
+  redirect(data.url)
+}
+
 export async function signOut() {
   const supabase = await createClient()
   await supabase.auth.signOut()

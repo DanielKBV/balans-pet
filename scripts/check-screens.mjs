@@ -39,7 +39,7 @@ async function signIn(browser) {
   await page.goto(`${baseUrl}/login`, { waitUntil: "networkidle" });
   await page.fill("#email", process.env.TEST_EMAIL);
   await page.fill("#password", process.env.TEST_PASSWORD);
-  await page.click('button[type="submit"]');
+  await page.click('form:has(#email) button[type="submit"]');
   await page.waitForURL((url) => url.pathname !== "/login");
   const storageState = await page.context().storageState();
   await page.close();
