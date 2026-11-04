@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { DialogFooter } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
@@ -46,6 +47,7 @@ export function EntryForm({
   isOwner,
   save,
   onSaved,
+  onCancel,
   defaultValues,
   successMessage = "Запись добавлена",
 }: {
@@ -54,6 +56,8 @@ export function EntryForm({
   isOwner: boolean
   save: (values: EntryFormValues) => Promise<EntrySaveResult>
   onSaved?: () => void
+  /** In a dialog: shows «Отмена» to the left of the save button, closing without changes. */
+  onCancel?: () => void
   defaultValues?: EntryFormValues
   successMessage?: string
 }) {
@@ -204,10 +208,23 @@ export function EntryForm({
         <FieldError id="comment-error" errors={[errors.comment]} />
       </Field>
 
-      <Button type="submit" size="lg" className="w-full sm:w-auto sm:self-start" disabled={isSubmitting}>
-        {isSubmitting && <Spinner />}
-        Сохранить запись
-      </Button>
+      {onCancel ? (
+        // Short «Сохранить» (as in other dialogs) so both buttons fit half the width on a phone.
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            Отмена
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Spinner />}
+            Сохранить
+          </Button>
+        </DialogFooter>
+      ) : (
+        <Button type="submit" size="lg" className="w-full sm:w-auto sm:self-start" disabled={isSubmitting}>
+          {isSubmitting && <Spinner />}
+          Сохранить запись
+        </Button>
+      )}
     </form>
   )
 }

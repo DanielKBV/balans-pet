@@ -570,6 +570,7 @@ function RowActions({ entry, categories, today }: { entry: EntryRow; categories:
             isOwner
             save={(values) => updateEntry(entry.id, values)}
             onSaved={() => setIsEditing(false)}
+            onCancel={() => setIsEditing(false)}
             successMessage="Запись сохранена"
             defaultValues={{
               type: entry.type,
