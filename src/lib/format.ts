@@ -16,3 +16,9 @@ export function formatChange(value: number): string {
   const sign = value < 0 ? MINUS : value > 0 ? "+" : ""
   return `${sign}${percent.format(Math.abs(value))}%`
 }
+
+/** «2026-11-04» → «04.11.2026». Works on the date string, so the time zone cannot shift the day. */
+export function formatDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-")
+  return `${day}.${month}.${year}`
+}

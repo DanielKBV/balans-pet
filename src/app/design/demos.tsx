@@ -5,11 +5,12 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
 import { RotateCwIcon, Trash2Icon } from "lucide-react"
 
-import { cn } from "@/lib/utils"
 import { formatSom } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
+import { Textarea } from "@/components/ui/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   ChartContainer,
   ChartLegend,
@@ -136,83 +137,76 @@ export function EntryFormDemo() {
   const [category, setCategory] = useState(incomeCategories[0])
   const categories = type === "income" ? incomeCategories : expenseCategories
 
-  function pickType(next: "income" | "expense") {
+  function pickType(next: string | undefined) {
+    if (next !== "income" && next !== "expense") return
     setType(next)
     setCategory((next === "income" ? incomeCategories : expenseCategories)[0])
   }
 
   return (
     <form className="flex flex-col gap-5" onSubmit={(e) => e.preventDefault()}>
-      <div role="radiogroup" aria-label="Тип записи" className="grid grid-cols-2 gap-2">
-        {(["income", "expense"] as const).map((value) => (
-          <Button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={type === value}
-            variant="outline"
-            onClick={() => pickType(value)}
-            className={cn(
-              type === value && value === "income" && "border-income bg-income-subtle text-income hover:bg-income-subtle",
-              type === value && value === "expense" && "border-expense bg-expense-subtle text-expense hover:bg-expense-subtle"
-            )}
-          >
-            {value === "income" ? "Доход" : "Расход"}
-          </Button>
-        ))}
-      </div>
+      <ToggleGroup
+        aria-label="Тип записи"
+        variant="outline"
+        className="w-full"
+        value={[type]}
+        onValueChange={(value) => pickType(value[0])}
+      >
+        <ToggleGroupItem
+          value="income"
+          className="flex-1 aria-pressed:border-income aria-pressed:bg-income-subtle aria-pressed:text-income aria-pressed:hover:bg-income-subtle aria-pressed:hover:text-income"
+        >
+          Доход
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="expense"
+          className="flex-1 aria-pressed:border-expense aria-pressed:bg-expense-subtle aria-pressed:text-expense aria-pressed:hover:bg-expense-subtle aria-pressed:hover:text-expense"
+        >
+          Расход
+        </ToggleGroupItem>
+      </ToggleGroup>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="amount">Сумма</Label>
+      <Field>
+        <FieldLabel htmlFor="amount">Сумма</FieldLabel>
         <div className="relative">
-          <Input id="amount" inputMode="numeric" placeholder="0" className="pr-14 tabular-nums" />
-          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted-foreground">
+          <Input id="amount" inputMode="numeric" placeholder="0" className="h-14 pr-16 text-heading tabular-nums" />
+          <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted-foreground">
             сом
           </span>
         </div>
-      </div>
+      </Field>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 font-medium">Категория</legend>
-        <div className="flex flex-wrap gap-2">
+      <FieldSet>
+        <FieldLegend>Категория</FieldLegend>
+        <ToggleGroup
+          variant="outline"
+          className="w-full flex-wrap"
+          value={[category]}
+          onValueChange={(value) => value[0] && setCategory(value[0])}
+        >
           {categories.map((name) => (
-            <Button
-              key={name}
-              type="button"
-              variant="outline"
-              size="sm"
-              aria-pressed={category === name}
-              onClick={() => setCategory(name)}
-              className={cn(
-                category === name &&
-                  "border-primary bg-primary-subtle text-primary-text hover:bg-primary-subtle"
-              )}
-            >
-              {name}
-            </Button>
+            <ToggleGroupItem key={name} value={name} className="max-w-full">
+              <span className="truncate">{name}</span>
+            </ToggleGroupItem>
           ))}
-        </div>
-      </fieldset>
+        </ToggleGroup>
+      </FieldSet>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="date">Дата</Label>
-          <Input id="date" type="date" defaultValue="2026-10-08" />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="comment">Комментарий</Label>
-          <Input id="comment" placeholder="Необязательно" />
-        </div>
-      </div>
+      <Field>
+        <FieldLabel htmlFor="date">Дата</FieldLabel>
+        <Input id="date" type="date" defaultValue="2026-10-08" className="w-full sm:w-56" />
+      </Field>
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button type="button" variant="ghost">
-          Отмена
-        </Button>
-        <Button type="submit" onClick={() => toast.success("Запись сохранена")}>
-          Сохранить
-        </Button>
-      </div>
+      <Field>
+        <FieldLabel htmlFor="comment">
+          Комментарий <span className="font-normal text-muted-foreground">(необязательно)</span>
+        </FieldLabel>
+        <Textarea id="comment" placeholder="Например: 3 машины, Toyota Camry" />
+      </Field>
+
+      <Button type="submit" size="lg" className="w-full sm:w-auto sm:self-start" onClick={() => toast.success("Запись добавлена")}>
+        Сохранить запись
+      </Button>
     </form>
   )
 }

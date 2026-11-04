@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/password-input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import {
@@ -26,6 +27,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { DialogDemo, EntryFormDemo, IncomeExpenseChart, RetryError, ToastDemo } from "./demos"
+
+const typeItems = [
+  { value: null, label: "Все типы" },
+  { value: "income", label: "Доходы" },
+  { value: "expense", label: "Расходы" },
+]
 
 export const metadata: Metadata = {
   title: "Дизайн-система · Balans",
@@ -276,6 +283,21 @@ export default function DesignPage() {
                 <p id="sum-error-text" className="text-small text-destructive-text">
                   Сумма должна быть больше нуля
                 </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="type-select">Список</Label>
+                <Select items={typeItems} defaultValue={null}>
+                  <SelectTrigger id="type-select" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {typeItems.map((item) => (
+                      <SelectItem key={item.label} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="disabled">Неактивное поле</Label>
