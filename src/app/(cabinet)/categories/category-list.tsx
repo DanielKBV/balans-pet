@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useState, useTransition } from "react"
+import { useState, useTransition, type FormEvent } from "react"
 import { EyeIcon, EyeOffIcon, PencilIcon } from "lucide-react"
 import { toast } from "sonner"
 
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import { addCategory, renameCategory, setCategoryHidden, type CategoryState } from "./actions"
 
 export type Category = { id: string; name: string; is_hidden: boolean }
@@ -58,48 +59,85 @@ export function CategorySection({
   )
 }
 
+/**
+ * Name field state shared by the add form and the rename dialog: the error
+ * disappears as soon as the text changes, an empty field is caught before the server.
+ */
+function useNameField(initialName: string, save: (name: string) => Promise<CategoryState>) {
+  const [name, setName] = useState(initialName)
+  const [error, setError] = useState<string>()
+  const [isPending, startTransition] = useTransition()
+
+  function onChange(value: string) {
+    setName(value)
+    setError(undefined)
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>, onSaved: () => void) {
+    event.preventDefault()
+    if (!name.trim()) {
+      setError("Введите название категории")
+      return
+    }
+    startTransition(async () => {
+      const result = await save(name)
+      setError(result.error)
+      if (!result.error) onSaved()
+    })
+  }
+
+  return { name, setName, error, isPending, onChange, submit }
+}
+
+function FieldError({ id, error }: { id: string; error?: string }) {
+  if (!error) return null
+  return (
+    <p id={id} role="alert" className="text-small text-destructive-text">
+      {error}
+    </p>
+  )
+}
+
 function AddForm({ type }: { type: "income" | "expense" }) {
-  // Controlled: React resets uncontrolled fields after a form action, also on error.
-  const [name, setName] = useState("")
-  const [state, formAction, isPending] = useActionState<CategoryState, FormData>(async (prev, formData) => {
-    const result = await addCategory(prev, formData)
-    if (!result.error) setName("")
-    return result
-  }, {})
+  const field = useNameField("", (name) => addCategory(type, name))
   const inputId = `new-${type}`
+  const errorId = `${inputId}-error`
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form noValidate onSubmit={(e) => field.submit(e, () => field.setName(""))} className="flex flex-col gap-2">
       <Label htmlFor={inputId} className="sr-only">
         Новая категория
       </Label>
       <div className="flex gap-2">
-        <input type="hidden" name="type" value={type} />
         <Input
           id={inputId}
-          name="name"
           placeholder="Новая категория"
           maxLength={100}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
+          value={field.name}
+          onChange={(e) => field.onChange(e.target.value)}
+          aria-invalid={!!field.error}
+          aria-describedby={field.error ? errorId : undefined}
         />
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Добавляем…" : "Добавить"}
+        <Button type="submit" disabled={field.isPending}>
+          {field.isPending && <Spinner />}
+          Добавить
         </Button>
       </div>
-      {state.error && (
-        <p role="alert" className="text-small text-destructive-text">
-          {state.error}
-        </p>
-      )}
+      <FieldError id={errorId} error={field.error} />
     </form>
   )
 }
 
 function CategoryRow({ category }: { category: Category }) {
   const [isRenaming, setIsRenaming] = useState(false)
+  // A new key on every open remounts the dialog, so it starts clean.
+  const [renameKey, setRenameKey] = useState(0)
   const [isPending, startTransition] = useTransition()
+
+  function openRename() {
+    setRenameKey((key) => key + 1)
+    setIsRenaming(true)
+  }
 
   function toggleHidden() {
     startTransition(async () => {
@@ -119,7 +157,7 @@ function CategoryRow({ category }: { category: Category }) {
         size="icon"
         aria-label={`Переименовать «${category.name}»`}
         title="Переименовать"
-        onClick={() => setIsRenaming(true)}
+        onClick={openRename}
       >
         <PencilIcon className="size-5 text-muted-foreground" />
       </Button>
@@ -127,17 +165,20 @@ function CategoryRow({ category }: { category: Category }) {
         variant="ghost"
         size="icon"
         aria-label={category.is_hidden ? `Показать «${category.name}»` : `Скрыть «${category.name}»`}
+        aria-busy={isPending}
         title={category.is_hidden ? "Показать" : "Скрыть"}
         disabled={isPending}
         onClick={toggleHidden}
       >
-        {category.is_hidden ? (
+        {isPending ? (
+          <Spinner className="size-5 text-muted-foreground" />
+        ) : category.is_hidden ? (
           <EyeIcon className="size-5 text-muted-foreground" />
         ) : (
           <EyeOffIcon className="size-5 text-muted-foreground" />
         )}
       </Button>
-      <RenameDialog category={category} open={isRenaming} onOpenChange={setIsRenaming} />
+      <RenameDialog key={renameKey} category={category} open={isRenaming} onOpenChange={setIsRenaming} />
     </li>
   )
 }
@@ -151,42 +192,34 @@ function RenameDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const [name, setName] = useState(category.name)
-  const [state, formAction, isPending] = useActionState<CategoryState, FormData>(async (prev, formData) => {
-    const result = await renameCategory(prev, formData)
-    if (!result.error) onOpenChange(false)
-    return result
-  }, {})
+  const field = useNameField(category.name, (name) => renameCategory(category.id, name))
   const inputId = `rename-${category.id}`
+  const errorId = `${inputId}-error`
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <form action={formAction} className="flex flex-col gap-4">
+        <form noValidate onSubmit={(e) => field.submit(e, () => onOpenChange(false))} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>Переименовать категорию</DialogTitle>
           </DialogHeader>
-          <input type="hidden" name="id" value={category.id} />
           <div className="flex flex-col gap-2">
             <Label htmlFor={inputId}>Название</Label>
             <Input
               id={inputId}
-              name="name"
               maxLength={100}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
+              value={field.name}
+              onChange={(e) => field.onChange(e.target.value)}
+              aria-invalid={!!field.error}
+              aria-describedby={field.error ? errorId : undefined}
             />
+            <FieldError id={errorId} error={field.error} />
           </div>
-          {state.error && (
-            <p role="alert" className="text-small text-destructive-text">
-              {state.error}
-            </p>
-          )}
           <DialogFooter>
             <DialogClose render={<Button variant="ghost" />}>Отмена</DialogClose>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Сохраняем…" : "Сохранить"}
+            <Button type="submit" disabled={field.isPending}>
+              {field.isPending && <Spinner />}
+              Сохранить
             </Button>
           </DialogFooter>
         </form>

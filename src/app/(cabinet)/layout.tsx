@@ -8,6 +8,7 @@ import { CabinetBottomNav, CabinetSidebar } from "@/components/cabinet-nav"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getMembership } from "@/lib/business"
+import CabinetLoading from "./loading"
 
 export default function CabinetLayout({ children }: { children: ReactNode }) {
   return (
@@ -30,7 +31,7 @@ export default function CabinetLayout({ children }: { children: ReactNode }) {
           id="main"
           className="page-container flex-1 pt-6 pb-[calc(--spacing(6)+var(--spacing-bottom-nav)+env(safe-area-inset-bottom))] lg:py-8"
         >
-          <Suspense fallback={<PageSkeleton />}>
+          <Suspense fallback={<CabinetLoading />}>
             <RequireBusiness>{children}</RequireBusiness>
           </Suspense>
         </main>
@@ -49,13 +50,4 @@ async function RequireBusiness({ children }: { children: ReactNode }) {
   const membership = await getMembership()
   if (!membership) redirect("/onboarding")
   return children
-}
-
-function PageSkeleton() {
-  return (
-    <div className="flex flex-col gap-6">
-      <Skeleton className="h-9 w-48" />
-      <Skeleton className="h-48 w-full" />
-    </div>
-  )
 }

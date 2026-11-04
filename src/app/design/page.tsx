@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/password-input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Table,
   TableBody,
@@ -245,9 +246,16 @@ export default function DesignPage() {
                 <GoogleIcon className="size-5" />
                 Войти через Google
               </Button>
+              <Button disabled aria-busy>
+                <Spinner />
+                Добавить
+              </Button>
+              <Button variant="ghost" size="icon" disabled aria-busy aria-label="Скрыть">
+                <Spinner className="size-5 text-muted-foreground" />
+              </Button>
             </div>
             <p className="text-small text-muted-foreground">
-              Наведите мышь, нажмите, перейдите клавишей Tab, чтобы увидеть рамку фокуса.
+              Наведите мышь, нажмите, перейдите клавишей Tab, чтобы увидеть рамку фокуса. Две последние кнопки ждут ответа сервера.
             </p>
           </Card>
         </Section>
