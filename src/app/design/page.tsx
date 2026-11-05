@@ -6,6 +6,8 @@ import { formatSom } from "@/lib/format"
 import { AppHeader, BottomNav, Sidebar } from "@/components/app-nav"
 import { GoogleIcon } from "@/components/google-icon"
 import { Logo } from "@/components/logo"
+import { MonthSwitcher } from "@/components/month-switcher"
+import { TopExpenses } from "@/components/top-expenses"
 import { Money } from "@/components/money"
 import { StatCard, StatCardSkeleton } from "@/components/stat-card"
 import { StateMessage } from "@/components/state-message"
@@ -26,12 +28,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { DialogDemo, EntryFormDemo, IncomeExpenseChart, RetryError, ToastDemo } from "./demos"
+import { DialogDemo, EntryFormDemo, IncomeExpenseChartDemo, RetryError, ToastDemo } from "./demos"
 
 const typeItems = [
   { value: null, label: "Все типы" },
   { value: "income", label: "Доходы" },
   { value: "expense", label: "Расходы" },
+]
+
+const topExpenses = [
+  { name: "Аренда", total: 60000 },
+  { name: "Зарплата", total: 45000 },
+  { name: "Расходники (шампунь, воск)", total: 22000 },
+  { name: "Коммунальные", total: 12000 },
+  { name: "Ремонт оборудования", total: 5000 },
+  { name: "Реклама", total: 2000 },
+  { name: "Прочее", total: 1000 },
 ]
 
 export const metadata: Metadata = {
@@ -391,9 +403,29 @@ export default function DesignPage() {
               <CardDescription>Май — октябрь 2026</CardDescription>
             </CardHeader>
             <CardContent>
-              <IncomeExpenseChart />
+              <IncomeExpenseChartDemo />
             </CardContent>
           </Card>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Топ расходов</CardTitle>
+                <CardDescription>Пять самых больших категорий, остальное одной строкой. Один цвет расходов: длина полосы — доля от всех расходов месяца</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TopExpenses items={topExpenses} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Выбор месяца</CardTitle>
+                <CardDescription>Стрелки по бокам, вперёд дальше текущего месяца нельзя. Нажатая стрелка крутит спиннер, пока грузится месяц</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MonthSwitcher title="Октябрь 2026" prevHref="/design#chart" nextHref={null} />
+              </CardContent>
+            </Card>
+          </div>
         </Section>
 
         <Section id="states" title="Состояния" description="У каждого списка и графика: загрузка, пусто, ошибка.">

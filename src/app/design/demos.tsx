@@ -1,24 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
 import { RotateCwIcon, Trash2Icon } from "lucide-react"
 
-import { formatSom } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
+import { IncomeExpenseChart } from "@/components/income-expense-chart"
 import {
   Dialog,
   DialogClose,
@@ -40,31 +31,8 @@ const monthly = [
   { month: "Окт", income: 226000, expense: 147000 },
 ]
 
-const chartConfig = {
-  income: { label: "Доход", color: "var(--chart-income)" },
-  expense: { label: "Расход", color: "var(--chart-expense)" },
-} satisfies ChartConfig
-
-export function IncomeExpenseChart() {
-  return (
-    <ChartContainer config={chartConfig} className="aspect-auto h-72 w-full">
-      <BarChart data={monthly} barGap={2} margin={{ left: 0, right: 0 }}>
-        <CartesianGrid vertical={false} />
-        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-        <YAxis
-          tickLine={false}
-          axisLine={false}
-          width={72}
-          ticks={[0, 50000, 100000, 150000, 200000, 250000]}
-          tickFormatter={(v: number) => (v === 0 ? "0" : `${v / 1000} тыс.`)}
-        />
-        <ChartTooltip cursor={false} content={<ChartTooltipContent valueFormatter={formatSom} />} />
-        <ChartLegend itemSorter={null} content={<ChartLegendContent />} />
-        <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} maxBarSize={28} />
-        <Bar dataKey="expense" fill="var(--color-expense)" radius={[4, 4, 0, 0]} maxBarSize={28} />
-      </BarChart>
-    </ChartContainer>
-  )
+export function IncomeExpenseChartDemo() {
+  return <IncomeExpenseChart data={monthly} />
 }
 
 export function RetryError() {
