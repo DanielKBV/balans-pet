@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { DatePicker } from "@/components/date-picker"
 import { EntryForm } from "@/components/entry-form"
 import { Money } from "@/components/money"
 import { StateMessage } from "@/components/state-message"
@@ -488,7 +489,7 @@ function DateFilter({
       <Label htmlFor={id} className="text-small text-muted-foreground">
         {label}
       </Label>
-      <Input id={id} type="date" value={value} min={min || undefined} max={max} onChange={(e) => onChange(e.target.value)} />
+      <DatePicker id={id} value={value} min={min || undefined} max={max} onChange={onChange} placeholder="Любая" clearable />
     </div>
   )
 }

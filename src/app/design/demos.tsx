@@ -4,8 +4,9 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { RotateCwIcon, Trash2Icon } from "lucide-react"
 
+import { AmountInput } from "@/components/amount-input"
+import { DatePicker } from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -21,6 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { StateMessage } from "@/components/state-message"
+import { MIN_DATE } from "@/lib/entry"
 
 const monthly = [
   { month: "Май", income: 182000, expense: 131000 },
@@ -103,6 +105,8 @@ const expenseCategories = ["Аренда", "Зарплата", "Расходни
 export function EntryFormDemo() {
   const [type, setType] = useState<"income" | "expense">("income")
   const [category, setCategory] = useState(incomeCategories[0])
+  const [date, setDate] = useState("2026-10-08")
+  const [filterDate, setFilterDate] = useState("")
   const categories = type === "income" ? incomeCategories : expenseCategories
 
   function pickType(next: string | undefined) {
@@ -136,12 +140,7 @@ export function EntryFormDemo() {
 
       <Field>
         <FieldLabel htmlFor="amount">Сумма</FieldLabel>
-        <div className="relative">
-          <Input id="amount" inputMode="numeric" placeholder="0" className="h-14 pr-16 text-heading tabular-nums" />
-          <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted-foreground">
-            сом
-          </span>
-        </div>
+        <AmountInput id="amount" defaultValue="16 000" />
       </Field>
 
       <FieldSet>
@@ -162,7 +161,12 @@ export function EntryFormDemo() {
 
       <Field>
         <FieldLabel htmlFor="date">Дата</FieldLabel>
-        <Input id="date" type="date" defaultValue="2026-10-08" className="w-full sm:w-56" />
+        <DatePicker id="date" value={date} onChange={setDate} min={MIN_DATE} className="w-full sm:w-56" />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="date-filter">Дата в фильтре (можно очистить)</FieldLabel>
+        <DatePicker id="date-filter" value={filterDate} onChange={setFilterDate} placeholder="Любая" clearable className="w-full sm:w-56" />
       </Field>
 
       <Field>

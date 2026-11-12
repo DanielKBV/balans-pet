@@ -5,10 +5,11 @@ import { Controller, useForm, useWatch, type Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
+import { AmountInput, formatAmountInput } from "@/components/amount-input"
+import { DatePicker } from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { DialogFooter } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -63,7 +64,10 @@ export function EntryForm({
 }) {
   const form = useForm<EntryFormValues, unknown, EntryValues>({
     resolver: zodResolver(entrySchema),
-    defaultValues: defaultValues ?? { type: "income", amount: "", categoryId: "", date: today, comment: "" },
+    // Editing opens the stored amount already grouped: «1 000».
+    defaultValues: defaultValues
+      ? { ...defaultValues, amount: formatAmountInput(defaultValues.amount) }
+      : { type: "income", amount: "", categoryId: "", date: today, comment: "" },
   })
   const type = useWatch({ control: form.control, name: "type" })
   const typeCategories = categories.filter((category) => category.type === type)
@@ -117,21 +121,12 @@ export function EntryForm({
 
       <Field data-invalid={!!errors.amount}>
         <FieldLabel htmlFor="amount">Сумма</FieldLabel>
-        <div className="relative">
-          <Input
-            id="amount"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="0"
-            className="h-14 pr-16 text-heading tabular-nums"
-            aria-invalid={!!errors.amount}
-            aria-describedby={errors.amount ? "amount-error" : undefined}
-            {...form.register("amount")}
-          />
-          <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted-foreground">
-            сом
-          </span>
-        </div>
+        <AmountInput
+          id="amount"
+          aria-invalid={!!errors.amount}
+          aria-describedby={errors.amount ? "amount-error" : undefined}
+          {...form.register("amount")}
+        />
         <FieldError id="amount-error" errors={[errors.amount]} />
       </Field>
 
@@ -181,15 +176,21 @@ export function EntryForm({
 
       <Field data-invalid={!!errors.date}>
         <FieldLabel htmlFor="date">Дата</FieldLabel>
-        <Input
-          id="date"
-          type="date"
-          min={MIN_DATE}
-          max={today}
-          className="w-full sm:w-56"
-          aria-invalid={!!errors.date}
-          aria-describedby={errors.date ? "date-error" : undefined}
-          {...form.register("date")}
+        <Controller
+          name="date"
+          control={form.control}
+          render={({ field }) => (
+            <DatePicker
+              id="date"
+              value={field.value}
+              onChange={field.onChange}
+              min={MIN_DATE}
+              max={today}
+              className="w-full sm:w-56"
+              aria-invalid={!!errors.date}
+              aria-describedby={errors.date ? "date-error" : undefined}
+            />
+          )}
         />
         <FieldError id="date-error" errors={[errors.date]} />
       </Field>
