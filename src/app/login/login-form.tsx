@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/password-input"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import { authAction, signInWithGoogle, type AuthMode, type AuthState } from "./actions"
 
-const copy: Record<AuthMode, { title: string; submit: string; pending: string }> = {
-  signin: { title: "Вход в Balans", submit: "Войти", pending: "Входим…" },
-  signup: { title: "Регистрация", submit: "Зарегистрироваться", pending: "Создаём аккаунт…" },
-  forgot: { title: "Восстановление пароля", submit: "Отправить ссылку", pending: "Отправляем…" },
+const copy: Record<AuthMode, { title: string; submit: string }> = {
+  signin: { title: "Вход в Balans", submit: "Войти" },
+  signup: { title: "Регистрация", submit: "Зарегистрироваться" },
+  forgot: { title: "Восстановление пароля", submit: "Отправить ссылку" },
 }
 
 const linkClass =
@@ -65,7 +66,7 @@ function AuthForm({
   next: string
 }) {
   const [state, formAction, isPending] = useActionState<AuthState, FormData>(authAction, initial)
-  const { title, submit, pending } = copy[mode]
+  const { title, submit } = copy[mode]
 
   return (
     <div className="flex flex-col gap-6">
@@ -125,7 +126,8 @@ function AuthForm({
         )}
 
         <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? pending : submit}
+          {isPending && <Spinner />}
+          {submit}
         </Button>
       </form>
 
@@ -168,8 +170,8 @@ function GoogleButton() {
   const { pending } = useFormStatus()
   return (
     <Button type="submit" variant="outline" disabled={pending} className="w-full">
-      <GoogleIcon className="size-5" />
-      {pending ? "Переходим в Google…" : "Войти через Google"}
+      {pending ? <Spinner /> : <GoogleIcon className="size-5" />}
+      Войти через Google
     </Button>
   )
 }

@@ -64,7 +64,7 @@ export default function PrivacyPage() {
         <article className="flex max-w-2xl flex-col gap-8">
           <div className="flex flex-col gap-2">
             <h1 className="text-title">Политика конфиденциальности</h1>
-            <p className="text-small text-muted-foreground">Обновлено 3 ноября 2026 года</p>
+            <p className="text-small text-muted-foreground">Обновлено 12 ноября 2026 года</p>
             <p className="text-muted-foreground text-pretty">
               Balans — учебный pet-проект: онлайн-тетрадь доходов и расходов для небольшого бизнеса.
               Здесь коротко о том, какие данные он хранит и как ими пользуется.
@@ -85,7 +85,8 @@ export default function PrivacyPage() {
           <section className="flex flex-col gap-3">
             <h2 className="text-heading">Удаление данных и связь</h2>
             <p className="text-pretty">
-              Чтобы удалить аккаунт и все данные или задать вопрос, напишите в{" "}
+              Владелец удаляет бизнес со всеми записями, категориями и командой сам: «Настройки» → «Удалить
+              бизнес». Чтобы удалить и сам аккаунт или задать вопрос, напишите в{" "}
               <a href={ISSUES_URL} target="_blank" rel="noreferrer" className={linkClass}>
                 Issues репозитория на GitHub
               </a>

@@ -5,6 +5,7 @@ import { useActionState, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import { createBusiness, type BusinessState } from "./actions"
 
 export function BusinessForm() {
@@ -48,7 +49,8 @@ export function BusinessForm() {
       )}
 
       <Button type="submit" disabled={isPending} className="w-full">
-        {isPending ? "Создаём…" : "Создать бизнес"}
+        {isPending && <Spinner />}
+        Создать бизнес
       </Button>
     </form>
   )

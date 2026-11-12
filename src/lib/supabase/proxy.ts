@@ -52,11 +52,14 @@ export async function updateSession(request: NextRequest) {
   if (request.method !== "GET") return response
 
   // A signed-in person on /login?next=… (e.g. from an invite) goes straight to that page.
+  // The landing is for guests: a signed-in person (logo on any page) lands in the cabinet.
   const redirectTo = !isSignedIn && matches(pathname, PROTECTED)
     ? "/login"
     : isSignedIn && matches(pathname, AUTH_ONLY_FOR_GUESTS)
       ? safeNext(request.nextUrl.searchParams.get("next"))
-      : null
+      : isSignedIn && pathname === "/"
+        ? "/dashboard"
+        : null
 
   if (!redirectTo) return response
 

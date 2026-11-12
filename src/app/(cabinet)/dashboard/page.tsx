@@ -4,6 +4,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ArrowRightIcon, PlusIcon } from "lucide-react"
 
+import { BlockError } from "@/components/block-error"
 import { IncomeExpenseChart } from "@/components/income-expense-chart"
 import { MonthSwitcher } from "@/components/month-switcher"
 import { Money } from "@/components/money"
@@ -79,9 +80,11 @@ async function Blocks({ searchParams }: { searchParams: SearchParams }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <Suspense fallback={<StatsSkeleton />}>
-        <Stats month={month} />
-      </Suspense>
+      <BlockError title="Не удалось загрузить итоги месяца" card>
+        <Suspense fallback={<StatsSkeleton />}>
+          <Stats month={month} />
+        </Suspense>
+      </BlockError>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -94,9 +97,11 @@ async function Blocks({ searchParams }: { searchParams: SearchParams }) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Suspense fallback={<Skeleton className="h-72 w-full rounded-lg" />}>
-              <Chart month={month} />
-            </Suspense>
+            <BlockError title="Не удалось загрузить график">
+              <Suspense fallback={<Skeleton className="h-72 w-full rounded-lg" />}>
+                <Chart month={month} />
+              </Suspense>
+            </BlockError>
           </CardContent>
         </Card>
 
@@ -108,9 +113,11 @@ async function Blocks({ searchParams }: { searchParams: SearchParams }) {
             <CardDescription>За {monthName(month)}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Suspense fallback={<ListSkeleton rows={5} />}>
-              <Top month={month} />
-            </Suspense>
+            <BlockError title="Не удалось загрузить расходы">
+              <Suspense fallback={<ListSkeleton rows={5} />}>
+                <Top month={month} />
+              </Suspense>
+            </BlockError>
           </CardContent>
         </Card>
       </div>
@@ -127,9 +134,11 @@ async function Blocks({ searchParams }: { searchParams: SearchParams }) {
           </Button>
         </CardHeader>
         <CardContent>
-          <Suspense fallback={<ListSkeleton rows={5} />}>
-            <Recent />
-          </Suspense>
+          <BlockError title="Не удалось загрузить записи">
+            <Suspense fallback={<ListSkeleton rows={5} />}>
+              <Recent />
+            </Suspense>
+          </BlockError>
         </CardContent>
       </Card>
     </div>
@@ -146,7 +155,7 @@ const getMonthlyTotals = cache(async (month: Month) => {
     p_from: firstDay(addMonths(month, 1 - CHART_MONTHS)),
     p_to: lastDay(month),
   })
-  // Thrown errors show the shared error page with "Повторить".
+  // Thrown errors show the block's own error state with "Повторить".
   if (error) throw new Error(error.message)
   const byMonth = new Map(
     (data as { month: string; income: number; expense: number }[]).map((row) => [row.month.slice(0, 7), row])

@@ -5,6 +5,7 @@ import { useActionState } from "react"
 import { Button } from "@/components/ui/button"
 import { PasswordInput } from "@/components/password-input"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import { updatePassword, type PasswordState } from "./actions"
 
 export function PasswordForm() {
@@ -41,7 +42,8 @@ export function PasswordForm() {
       )}
 
       <Button type="submit" disabled={isPending} className="w-full">
-        {isPending ? "Сохраняем…" : "Сохранить пароль"}
+        {isPending && <Spinner />}
+        Сохранить пароль
       </Button>
     </form>
   )

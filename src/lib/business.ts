@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server"
 
 type Membership = {
   role: "owner" | "employee"
+  display_name: string | null
+  email: string | null
   business: { name: string; activity: string }
 }
 
@@ -19,7 +21,7 @@ export const getMembership = cache(async () => {
 
   const { data, error } = await supabase
     .from("business_members")
-    .select("role, business:businesses(name, activity)")
+    .select("role, display_name, email, business:businesses(name, activity)")
     .eq("user_id", auth.claims.sub)
     .maybeSingle<Membership>()
 

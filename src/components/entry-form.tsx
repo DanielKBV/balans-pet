@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Controller, useForm, useWatch } from "react-hook-form"
+import { Controller, useForm, useWatch, type Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
@@ -68,6 +68,7 @@ export function EntryForm({
   const type = useWatch({ control: form.control, name: "type" })
   const typeCategories = categories.filter((category) => category.type === type)
   const { errors, isSubmitting } = form.formState
+  const isChanged = useIsChanged(form.control, defaultValues)
 
   // The server parses the raw strings with the same schema, so send them as typed.
   const onSubmit = form.handleSubmit(async () => {
@@ -214,7 +215,7 @@ export function EntryForm({
           <Button type="button" variant="ghost" onClick={onCancel}>
             Отмена
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={!isChanged || isSubmitting}>
             {isSubmitting && <Spinner />}
             Сохранить
           </Button>
@@ -227,4 +228,21 @@ export function EntryForm({
       )}
     </form>
   )
+}
+
+/** Values as the server will store them: spaces inside the amount and around the comment do not count. */
+function normalized(values: Partial<EntryFormValues>) {
+  return JSON.stringify([
+    values.type,
+    values.amount?.replace(/\s/g, ""),
+    values.categoryId,
+    values.date,
+    values.comment?.trim(),
+  ])
+}
+
+/** Editing: saving is allowed only after a real change. A new entry (no defaults) is always "changed". */
+function useIsChanged(control: Control<EntryFormValues, unknown, EntryValues>, defaultValues?: EntryFormValues) {
+  const current = useWatch({ control })
+  return !defaultValues || normalized(current) !== normalized(defaultValues)
 }
