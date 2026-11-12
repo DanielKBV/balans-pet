@@ -10,10 +10,16 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getMembership } from "@/lib/business"
 import CabinetLoading from "./loading"
 
+const SIDEBAR_CLASS = "sticky top-0 hidden h-dvh lg:flex"
+const BOTTOM_NAV_CLASS = "fixed inset-x-0 bottom-0 z-10 lg:hidden"
+
 export default function CabinetLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-1">
-      <CabinetSidebar className="sticky top-0 hidden h-dvh lg:flex" />
+      {/* Until the role is known, only the items both roles share are shown. */}
+      <Suspense fallback={<CabinetSidebar isOwner={false} className={SIDEBAR_CLASS} />}>
+        <RoleSidebar />
+      </Suspense>
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader className="sticky top-0 z-10 lg:px-8">
           <div className="flex items-center justify-between gap-2">
@@ -36,9 +42,21 @@ export default function CabinetLayout({ children }: { children: ReactNode }) {
           </Suspense>
         </main>
       </div>
-      <CabinetBottomNav className="fixed inset-x-0 bottom-0 z-10 lg:hidden" />
+      <Suspense fallback={<CabinetBottomNav isOwner={false} className={BOTTOM_NAV_CLASS} />}>
+        <RoleBottomNav />
+      </Suspense>
     </div>
   )
+}
+
+async function RoleSidebar() {
+  const membership = await getMembership()
+  return <CabinetSidebar isOwner={membership?.role === "owner"} className={SIDEBAR_CLASS} />
+}
+
+async function RoleBottomNav() {
+  const membership = await getMembership()
+  return <CabinetBottomNav isOwner={membership?.role === "owner"} className={BOTTOM_NAV_CLASS} />
 }
 
 async function BusinessName() {

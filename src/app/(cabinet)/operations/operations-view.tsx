@@ -61,7 +61,7 @@ import type { EntryType } from "@/lib/entry"
 import { formatDate, formatSom } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { deleteEntry, updateEntry } from "./actions"
-import { DEFAULT_PARAMS, hasFilters, PAGE_SIZE, toSearch, type OperationsParams } from "./params"
+import { DEFAULT_PARAMS, hasFilters, memberName, PAGE_SIZE, toSearch, type OperationsParams } from "./params"
 
 export type EntryRow = {
   id: string
@@ -71,9 +71,14 @@ export type EntryRow = {
   comment: string | null
   category_id: string
   category: { name: string } | null
+  /** Who added it: a team member's name or «Бывший сотрудник». Empty for an employee. */
+  author: string
+  /** The owner changes any entry; an employee their own for 24 hours (the server decides). */
+  editable: boolean
 }
 
 export type FilterCategory = { id: string; name: string; type: EntryType; is_hidden: boolean }
+export type FilterMember = { user_id: string; display_name: string | null; email: string | null }
 
 const TYPE_LABEL = { income: "Доход", expense: "Расход" } as const
 
@@ -96,7 +101,17 @@ const columns = helper.columns([
     id: "category",
     header: "Категория",
     enableSorting: false,
-    cell: (info) => info.row.original.category?.name,
+    cell: (info) => (
+      <>
+        {info.row.original.category?.name}
+        {/* Below 1280px there is no room for «Кто внёс», so the name goes under the category. */}
+        {info.row.original.author && (
+          <span className="block max-w-48 truncate text-small text-muted-foreground xl:hidden">
+            {info.row.original.author}
+          </span>
+        )}
+      </>
+    ),
   }),
   helper.accessor("comment", {
     id: "comment",
@@ -104,12 +119,24 @@ const columns = helper.columns([
     enableSorting: false,
     cell: (info) => <span className="line-clamp-2 text-muted-foreground">{info.getValue() || "—"}</span>,
   }),
+  helper.accessor("author", {
+    id: "author",
+    header: "Кто внёс",
+    enableSorting: false,
+    cell: (info) => (
+      <span className="block max-w-48 truncate" title={info.getValue()}>
+        {info.getValue()}
+      </span>
+    ),
+  }),
   helper.accessor("amount", {
     id: "amount",
     header: "Сумма",
     cell: (info) => <Money amount={info.getValue()} type={info.row.original.type} />,
   }),
 ])
+// An employee sees only their own entries, so «Кто внёс» would always be them.
+const employeeColumns = columns.filter((column) => column.id !== "author")
 
 /** URL params ↔ TanStack column filters: the address stays the single source of truth. */
 function toColumnFilters(params: OperationsParams): ColumnFiltersState {
@@ -118,6 +145,7 @@ function toColumnFilters(params: OperationsParams): ColumnFiltersState {
     { id: "date", value: [params.from, params.to] },
     { id: "type", value: params.type },
     { id: "category", value: params.category },
+    { id: "author", value: params.author },
   ].filter((filter) => (Array.isArray(filter.value) ? filter.value.some(Boolean) : filter.value))
 }
 
@@ -130,6 +158,7 @@ function fromColumnFilters(filters: ColumnFiltersState): Partial<OperationsParam
     to,
     type: (value("type") as OperationsParams["type"] | undefined) ?? "",
     category: (value("category") as string | undefined) ?? "",
+    author: (value("author") as string | undefined) ?? "",
   }
 }
 
@@ -138,12 +167,16 @@ export function OperationsView({
   total,
   params,
   categories,
+  members,
+  isOwner,
   today,
 }: {
   rows: EntryRow[]
   total: number
   params: OperationsParams
   categories: FilterCategory[]
+  members: FilterMember[]
+  isOwner: boolean
   today: string
 }) {
   const router = useRouter()
@@ -162,7 +195,7 @@ export function OperationsView({
 
   const table = useTable({
     features,
-    columns,
+    columns: isOwner ? columns : employeeColumns,
     data: rows,
     getRowId: (row) => row.id,
     state: { sorting, pagination, columnFilters },
@@ -203,8 +236,16 @@ export function OperationsView({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 items-end gap-x-2 gap-y-3 md:grid-cols-4 xl:grid-cols-[minmax(12rem,1fr)_repeat(4,minmax(0,10rem))_auto]">
-        <div className="relative col-span-2 md:col-span-4 xl:col-span-1">
+      <div
+        className={cn(
+          "grid grid-cols-2 items-end gap-x-2 gap-y-3 md:grid-cols-4",
+          // The owner has one more filter, so one row needs a wider screen.
+          isOwner
+            ? "2xl:grid-cols-[minmax(12rem,1fr)_minmax(0,12rem)_repeat(4,minmax(0,10rem))_auto]"
+            : "xl:grid-cols-[minmax(12rem,1fr)_repeat(4,minmax(0,10rem))_auto]"
+        )}
+      >
+        <div className={cn("relative col-span-2", isOwner ? "md:col-span-3 2xl:col-span-1" : "md:col-span-4 xl:col-span-1")}>
           <Label htmlFor="search" className="sr-only">
             Поиск по комментарию
           </Label>
@@ -218,6 +259,9 @@ export function OperationsView({
             onChange={(e) => changeQuery(e.target.value)}
           />
         </div>
+        {isOwner && (
+          <AuthorFilter value={params.author} members={members} onChange={(author) => setFilter("author", author)} />
+        )}
         <DateFilter id="from" label="С" value={params.from} max={params.to || today} onChange={(from) => setFilter("date", [from, params.to])} />
         <DateFilter id="to" label="По" value={params.to} min={params.from} max={today} onChange={(to) => setFilter("date", [params.from, to])} />
         <TypeFilter value={params.type} onChange={(type) => table.setColumnFilters((old) => [
@@ -293,7 +337,8 @@ export function OperationsView({
                             className={cn(
                               header.column.id === "amount" && "text-right",
                               // Below 1280px the sign and colour of the amount already show the type.
-                              header.column.id === "type" && "hidden xl:table-cell"
+                              header.column.id === "type" && "hidden xl:table-cell",
+                              header.column.id === "author" && "hidden xl:table-cell"
                             )}
                           >
                             {header.column.getCanSort() ? (
@@ -324,14 +369,15 @@ export function OperationsView({
                           className={cn(
                             cell.column.id === "amount" && "text-right",
                             cell.column.id === "comment" && "max-w-80 whitespace-normal",
-                            cell.column.id === "type" && "hidden xl:table-cell"
+                            cell.column.id === "type" && "hidden xl:table-cell",
+                            cell.column.id === "author" && "hidden xl:table-cell"
                           )}
                         >
                           <table.FlexRender cell={cell} />
                         </TableCell>
                       ))}
                       <TableCell className="py-0">
-                        <RowActions entry={row.original} categories={categories} today={today} />
+                        <RowActions entry={row.original} categories={categories} isOwner={isOwner} today={today} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -350,10 +396,11 @@ export function OperationsView({
                       </div>
                       <p className="text-small text-muted-foreground">
                         <span className="tabular-nums">{formatDate(entry.entry_date)}</span>
+                        {isOwner && <span className="break-words"> · {entry.author}</span>}
                         {entry.comment && <span className="break-words"> · {entry.comment}</span>}
                       </p>
                     </div>
-                    <RowActions entry={entry} categories={categories} today={today} />
+                    <RowActions entry={entry} categories={categories} isOwner={isOwner} today={today} />
                   </li>
                 ))}
               </ul>
@@ -512,7 +559,44 @@ function CategoryFilter({
   )
 }
 
-function RowActions({ entry, categories, today }: { entry: EntryRow; categories: FilterCategory[]; today: string }) {
+function AuthorFilter({
+  value,
+  members,
+  onChange,
+}: {
+  value: string
+  members: FilterMember[]
+  onChange: (value: string) => void
+}) {
+  const items = [{ value: null, label: "Все сотрудники" }, ...members.map((m) => ({ value: m.user_id, label: memberName(m) }))]
+
+  return (
+    <Select items={items} value={value || null} onValueChange={(next) => onChange((next as string | null) ?? "")}>
+      <SelectTrigger aria-label="Кто внёс" className="col-span-2 w-full min-w-0 md:col-span-1">
+        <SelectValue className="truncate" />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.value ?? "all"} value={item.value} title={item.label}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function RowActions({
+  entry,
+  categories,
+  isOwner,
+  today,
+}: {
+  entry: EntryRow
+  categories: FilterCategory[]
+  isOwner: boolean
+  today: string
+}) {
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   // A new key on every open remounts the form, so it starts from the saved entry.
@@ -533,6 +617,9 @@ function RowActions({ entry, categories, today }: { entry: EntryRow; categories:
       toast.success("Запись удалена")
     })
   }
+
+  // Keeps the row height and column width the same as rows with buttons.
+  if (!entry.editable) return <div aria-hidden className="w-22 shrink-0" />
 
   return (
     <div className="flex shrink-0 justify-end">
@@ -567,7 +654,7 @@ function RowActions({ entry, categories, today }: { entry: EntryRow; categories:
             key={editKey}
             categories={formCategories}
             today={today}
-            isOwner
+            isOwner={isOwner}
             save={(values) => updateEntry(entry.id, values)}
             onSaved={() => setIsEditing(false)}
             onCancel={() => setIsEditing(false)}

@@ -22,3 +22,15 @@ export function formatDate(isoDate: string): string {
   const [year, month, day] = isoDate.split("-")
   return `${day}.${month}.${year}`
 }
+
+const bishkekDate = new Intl.DateTimeFormat("ru-RU", {
+  timeZone: "Asia/Bishkek",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+})
+
+/** A moment from the database («2026-11-04T20:30:00Z») → its day in Bishkek: «05.11.2026». */
+export function formatMoment(timestamp: string): string {
+  return bishkekDate.format(new Date(timestamp))
+}

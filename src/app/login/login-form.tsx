@@ -21,9 +21,19 @@ const linkClass =
   "rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
 
 export function LoginForm() {
-  const urlError = useSearchParams().get("error")
+  const params = useSearchParams()
+  const urlError = params.get("error")
+  const urlMode = params.get("mode")
+  // ?next= brings the person back (e.g. to an invite); ?mode=signup opens registration.
+  // key: the same page with another ?mode= or ?error= (back button, invite links) starts fresh.
+  return (
+    <LoginModes key={`${urlMode}|${urlError}`} urlError={urlError} urlMode={urlMode} next={params.get("next") ?? ""} />
+  )
+}
+
+function LoginModes({ urlError, urlMode, next }: { urlError: string | null; urlMode: string | null; next: string }) {
   const linkExpired = urlError === "link"
-  const [mode, setMode] = useState<AuthMode>(linkExpired ? "forgot" : "signin")
+  const [mode, setMode] = useState<AuthMode>(linkExpired ? "forgot" : urlMode === "signup" ? "signup" : "signin")
   // Controlled: React resets uncontrolled fields after a form action, and the
   // email should survive both a failed attempt and a mode switch.
   const [email, setEmail] = useState("")
@@ -35,7 +45,7 @@ export function LoginForm() {
 
   // key: switching mode starts with a clean form state
   return (
-    <AuthForm key={mode} mode={mode} setMode={setMode} initial={initial} email={email} setEmail={setEmail} />
+    <AuthForm key={mode} mode={mode} setMode={setMode} initial={initial} email={email} setEmail={setEmail} next={next} />
   )
 }
 
@@ -45,12 +55,14 @@ function AuthForm({
   initial,
   email,
   setEmail,
+  next,
 }: {
   mode: AuthMode
   setMode: (mode: AuthMode) => void
   initial: AuthState
   email: string
   setEmail: (email: string) => void
+  next: string
 }) {
   const [state, formAction, isPending] = useActionState<AuthState, FormData>(authAction, initial)
   const { title, submit, pending } = copy[mode]
@@ -61,6 +73,7 @@ function AuthForm({
 
       <form action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name="mode" value={mode} />
+        <input type="hidden" name="next" value={next} />
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">Почта</Label>
@@ -124,6 +137,7 @@ function AuthForm({
             <span aria-hidden className="h-px flex-1 bg-border" />
           </div>
           <form action={signInWithGoogle}>
+            <input type="hidden" name="next" value={next} />
             <GoogleButton />
           </form>
         </>

@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 
+import { safeNext } from "@/lib/safe-next"
+
 const PROTECTED = [
   "/dashboard",
   "/operations",
@@ -49,17 +51,19 @@ export async function updateSession(request: NextRequest) {
   // otherwise the client receives HTML and throws "unexpected response".
   if (request.method !== "GET") return response
 
+  // A signed-in person on /login?next=… (e.g. from an invite) goes straight to that page.
   const redirectTo = !isSignedIn && matches(pathname, PROTECTED)
     ? "/login"
     : isSignedIn && matches(pathname, AUTH_ONLY_FOR_GUESTS)
-      ? "/dashboard"
+      ? safeNext(request.nextUrl.searchParams.get("next"))
       : null
 
   if (!redirectTo) return response
 
   const url = request.nextUrl.clone()
-  url.pathname = redirectTo
-  url.search = ""
+  const target = new URL(redirectTo, request.url)
+  url.pathname = target.pathname
+  url.search = target.search
   const redirect = NextResponse.redirect(url)
   // Keep refreshed session cookies on the redirect.
   response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie))

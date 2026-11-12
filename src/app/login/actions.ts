@@ -1,20 +1,14 @@
 "use server"
 
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { authErrorMessage } from "@/lib/auth-errors"
+import { safeNext } from "@/lib/safe-next"
+import { siteOrigin } from "@/lib/site-origin"
 import { createClient } from "@/lib/supabase/server"
 
 export type AuthMode = "signin" | "signup" | "forgot"
 export type AuthState = { error?: string; message?: string }
-
-async function siteOrigin() {
-  const h = await headers()
-  const host = h.get("x-forwarded-host") ?? h.get("host")
-  const proto = h.get("x-forwarded-proto") ?? "http"
-  return `${proto}://${host}`
-}
 
 /** One action for the three modes of the login page. */
 export async function authAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -48,15 +42,17 @@ export async function authAction(_prev: AuthState, formData: FormData): Promise<
     if (error) return { error: authErrorMessage(error) }
   }
 
-  redirect("/dashboard")
+  // Back to where the person came from, e.g. an invite link.
+  redirect(safeNext(formData.get("next")))
 }
 
 /** Sends the user to Google; they come back through /auth/callback. */
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData: FormData) {
+  const next = safeNext(formData.get("next"))
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${await siteOrigin()}/auth/callback` },
+    options: { redirectTo: `${await siteOrigin()}/auth/callback?from=google&next=${encodeURIComponent(next)}` },
   })
   if (error) redirect("/login?error=google")
   redirect(data.url)

@@ -13,19 +13,24 @@ import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 
-type NavItem = { href: string; label: string; Icon: LucideIcon; inBottomNav: boolean }
+type NavItem = { href: string; label: string; Icon: LucideIcon; inBottomNav: boolean; ownerOnly: boolean }
 
 export const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Дашборд", Icon: LayoutDashboardIcon, inBottomNav: true },
-  { href: "/operations", label: "Операции", Icon: ArrowLeftRightIcon, inBottomNav: true },
-  { href: "/add", label: "Добавить", Icon: PlusIcon, inBottomNav: true },
-  { href: "/categories", label: "Категории", Icon: TagsIcon, inBottomNav: false },
-  { href: "/team", label: "Команда", Icon: UsersIcon, inBottomNav: false },
-  { href: "/settings", label: "Настройки", Icon: SettingsIcon, inBottomNav: true },
+  { href: "/dashboard", label: "Дашборд", Icon: LayoutDashboardIcon, inBottomNav: true, ownerOnly: true },
+  { href: "/operations", label: "Операции", Icon: ArrowLeftRightIcon, inBottomNav: true, ownerOnly: false },
+  { href: "/add", label: "Добавить", Icon: PlusIcon, inBottomNav: true, ownerOnly: false },
+  { href: "/categories", label: "Категории", Icon: TagsIcon, inBottomNav: false, ownerOnly: true },
+  { href: "/team", label: "Команда", Icon: UsersIcon, inBottomNav: false, ownerOnly: true },
+  { href: "/settings", label: "Настройки", Icon: SettingsIcon, inBottomNav: true, ownerOnly: false },
 ]
 
+/** Menu items for the role: an employee sees only Операции, Добавить and Настройки. */
+export function navItemsFor(isOwner: boolean) {
+  return navItems.filter((item) => isOwner || !item.ownerOnly)
+}
+
 /** Left menu, 240px. The caller decides visibility (shown from lg). */
-export function Sidebar({ active, className }: { active?: string; className?: string }) {
+export function Sidebar({ active, isOwner = true, className }: { active?: string; isOwner?: boolean; className?: string }) {
   return (
     <aside
       className={cn(
@@ -37,7 +42,7 @@ export function Sidebar({ active, className }: { active?: string; className?: st
         <Logo />
       </div>
       <nav aria-label="Главное меню" className="flex flex-col gap-0.5 p-2">
-        {navItems.map(({ href, label, Icon }) => {
+        {navItemsFor(isOwner).map(({ href, label, Icon }) => {
           const isActive = href === active
           return (
             <Link
@@ -60,7 +65,7 @@ export function Sidebar({ active, className }: { active?: string; className?: st
 }
 
 /** Phone bottom menu, 64px + iPhone safe area. The caller positions it (fixed, below lg). */
-export function BottomNav({ active, className }: { active?: string; className?: string }) {
+export function BottomNav({ active, isOwner = true, className }: { active?: string; isOwner?: boolean; className?: string }) {
   return (
     <nav
       aria-label="Главное меню"
@@ -70,7 +75,7 @@ export function BottomNav({ active, className }: { active?: string; className?: 
       )}
     >
       <ul className="flex h-bottom-nav">
-        {navItems
+        {navItemsFor(isOwner)
           .filter((item) => item.inBottomNav)
           .map(({ href, label, Icon }) => {
             const isActive = href === active

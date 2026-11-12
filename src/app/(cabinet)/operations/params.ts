@@ -11,6 +11,8 @@ const paramsSchema = z.object({
   to: isoDate.or(z.literal("")).catch(""),
   type: z.enum(["income", "expense", ""]).catch(""),
   category: z.uuid().or(z.literal("")).catch(""),
+  // Who added the entry; the owner's filter only.
+  author: z.uuid().or(z.literal("")).catch(""),
   sort: z.enum(["date", "amount"]).catch("date"),
   dir: z.enum(["asc", "desc"]).catch("desc"),
   page: z.coerce.number().int().min(1).catch(1),
@@ -40,5 +42,10 @@ export function toSearch(params: OperationsParams): string {
 }
 
 export function hasFilters(params: OperationsParams): boolean {
-  return Boolean(params.q || params.from || params.to || params.type || params.category)
+  return Boolean(params.q || params.from || params.to || params.type || params.category || params.author)
+}
+
+/** Name for «Кто внёс» and the employee filter. */
+export function memberName(member: { display_name: string | null; email: string | null }): string {
+  return member.display_name ?? member.email ?? "Без имени"
 }
