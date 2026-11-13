@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Balans
 
-## Getting Started
+Онлайн-тетрадь доходов и расходов для небольшого бизнеса услуг: автомойки, барбершопа, СТО. Администратор вносит записи с телефона за минуту, владелец видит выручку, расходы и прибыль за месяц.
 
-First, run the development server:
+**[Открыть сайт](https://balans-pet.vercel.app)** · на главной кнопка **«Посмотреть демо»**: без регистрации, своя копия «Автомойки Азамата» с данными за полгода.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+![Дашборд демо-бизнеса](docs/screenshots/dashboard-light.png)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+<table>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/phone-add.png" alt="Добавление записи на телефоне"></td>
+    <td width="33%"><img src="docs/screenshots/phone-dashboard.png" alt="Дашборд на телефоне"></td>
+    <td width="33%"><img src="docs/screenshots/dashboard-dark.png" alt="Тёмная тема"></td>
+  </tr>
+</table>
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+![Операции: фильтры, поиск, сортировка](docs/screenshots/operations.png)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Что умеет
 
-## Learn More
+- **Запись за минуту.** Сумма, категория одной кнопкой, дата уже стоит сегодняшняя. Сумма показывается с пробелами («16 000»), дата выбирается в календаре.
+- **Итоги считаются сами.** Выручка, расходы и прибыль за месяц со сравнением с прошлым, график за полгода, топ расходов.
+- **Операции.** Таблица на компьютере и карточки на телефоне: поиск по комментарию, фильтры по датам, типу, категории и сотруднику, сортировка, изменение и удаление.
+- **Команда.** Владелец приглашает сотрудника ссылкой. Сотрудник вносит записи и видит только свои, итогов и прибыли не видит, свою запись может исправить в течение суток.
+- **Категории** доходов и расходов: стартовый набор при создании бизнеса, свои добавляются, ненужные скрываются без потери истории.
+- **Ставится на телефон** как приложение (PWA). Без интернета показывает «Нет соединения», а запись, отправленная без сети, уходит сама, когда сеть вернётся.
+- **Демо** для тех, кто пришёл посмотреть: анонимный вход и своя копия бизнеса, гости не мешают друг другу, через сутки копия удаляется.
+- Светлая и тёмная тема, интерфейс на русском, деньги в сомах, время по Бишкеку.
 
-To learn more about Next.js, take a look at the following resources:
+## Стек
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Next.js 16** (App Router, Server Actions, Cache Components / Partial Prerendering) + TypeScript
+- **Tailwind CSS v4** + **shadcn/ui** на Base UI, своя дизайн-система с токенами светлой и тёмной темы
+- **Supabase**: PostgreSQL, Auth (почта + пароль, Google, анонимный вход для демо), Row Level Security, pg_cron
+- React Hook Form + Zod, Recharts, react-day-picker
+- Хостинг **Vercel**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Отдельного бэкенда нет: серверные действия Next.js и функции в базе.
 
-## Deploy on Vercel
+## Что внутри интересного
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Права проверяет база, а не интерфейс.** Каждая таблица закрыта Row Level Security: бизнес не видит данных другого, сотрудник не видит чужих записей и итогов, менять свою запись может только 24 часа. Скрытые кнопки в интерфейсе — только для удобства.
+- **Целостность в схеме.** Категория записи обязана принадлежать тому же бизнесу и иметь тот же тип (составной внешний ключ). Создание бизнеса и принятие приглашения — транзакционные функции, двойной клик не создаёт дубликатов.
+- **Демо без общего аккаунта.** Каждый гость получает свою копию, данные генерируются в базе до сегодняшнего дня, поэтому демо не устаревает. Демо-гость не может пригласить людей или вступить в настоящий бизнес. Очистку делает pg_cron раз в час.
+- **Три состояния везде.** У каждого списка и графика есть загрузка (скелетоны), пусто и ошибка с «Повторить». На дашборде каждый блок падает отдельно, остальные работают.
+- **Адаптив проверяется автоматически.** Скрипт на Playwright снимает страницы на 6 ширинах (360–1920 px) в обеих темах и проверяет, что нет горизонтальной прокрутки (`npm run check:screens`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Документы
+
+- [Техническое задание](docs/TZ.md): роли, страницы, этапы и решения по ходу работы
+- [Дизайн-система](docs/DESIGN.md): токены, типографика, состояния и компоненты; живая витрина на странице `/design`
+- [Миграции базы](supabase/migrations): схема, права и функции по этапам
+
+Pet-проект Даниэла для портфолио.
