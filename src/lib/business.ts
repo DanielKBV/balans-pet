@@ -11,7 +11,7 @@ type Membership = {
   business: { name: string; activity: string }
 }
 
-/** Current user's membership, or null if they have no business yet. */
+/** Current user's membership, or null if they have no business yet. `isDemo`: anonymous demo guest. */
 export const getMembership = cache(async () => {
   // Supabase reads the clock (token expiry), so render at request time.
   await connection()
@@ -27,5 +27,5 @@ export const getMembership = cache(async () => {
 
   // Throw instead of returning null: a failed request must not look like "no business".
   if (error) throw new Error(error.message)
-  return data
+  return data && { ...data, isDemo: auth.claims.is_anonymous === true }
 })

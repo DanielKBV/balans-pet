@@ -1,13 +1,13 @@
 import Link from "next/link"
-import { ClockIcon } from "lucide-react"
 
 import { Logo } from "@/components/logo"
 import { Money } from "@/components/money"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { CabinetPreview } from "./cabinet-preview"
+import { DemoButton } from "./demo/demo-button"
 
 const REPO_URL = "https://github.com/DanielKBV/balans-pet"
 
@@ -82,19 +82,11 @@ const features = [
 
 function CallToAction() {
   return (
-    <div className="flex flex-col gap-3">
-      <p className="flex items-center gap-2 text-small text-muted-foreground">
-        <ClockIcon aria-hidden className="size-4 shrink-0" />
-        Демо откроется в ближайших обновлениях
-      </p>
-      <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-        <Link href="/login" className={buttonVariants({ size: "lg" })}>
-          Попробовать бесплатно
-        </Link>
-        <Button size="lg" variant="outline" disabled>
-          Посмотреть демо
-        </Button>
-      </div>
+    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+      <Link href="/login" className={buttonVariants({ size: "lg" })}>
+        Попробовать бесплатно
+      </Link>
+      <DemoButton />
     </div>
   )
 }

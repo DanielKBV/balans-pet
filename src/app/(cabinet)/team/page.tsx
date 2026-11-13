@@ -62,7 +62,12 @@ async function Team() {
           <CardDescription>Сотрудник вносит записи и видит только свои. Итоги и прибыль видите только вы.</CardDescription>
         </CardHeader>
         <CardContent>
-          <InviteBlock invite={invites.data[0] ?? null} origin={origin} />
+          {/* The database refuses invites from a demo guest too. */}
+          {membership.isDemo ? (
+            <p className="text-muted-foreground">В демо приглашения выключены. Создайте свой бизнес, чтобы позвать сотрудников.</p>
+          ) : (
+            <InviteBlock invite={invites.data[0] ?? null} origin={origin} />
+          )}
         </CardContent>
       </Card>
 

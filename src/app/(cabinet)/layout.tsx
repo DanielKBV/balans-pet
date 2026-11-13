@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 
 import { AppHeader } from "@/components/app-nav"
 import { CabinetBottomNav, CabinetSidebar } from "@/components/cabinet-nav"
+import { DemoBanner } from "@/components/demo-banner"
 import { SignOutIconButton } from "@/components/sign-out-button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getMembership } from "@/lib/business"
@@ -31,6 +32,9 @@ export default function CabinetLayout({ children }: { children: ReactNode }) {
           id="main"
           className="page-container flex-1 pt-6 pb-[calc(--spacing(6)+var(--spacing-bottom-nav)+env(safe-area-inset-bottom))] lg:py-8"
         >
+          <Suspense>
+            <DemoBanner />
+          </Suspense>
           <Suspense fallback={<CabinetLoading />}>
             <RequireBusiness>{children}</RequireBusiness>
           </Suspense>

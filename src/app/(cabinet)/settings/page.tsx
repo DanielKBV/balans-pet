@@ -51,15 +51,20 @@ async function Settings() {
             defaultName={membership.display_name ?? membership.email ?? ""}
             buttonVariant={isOwner ? "outline" : "default"}
           />
-          <div className="flex flex-col gap-1">
-            <span className="text-small text-muted-foreground">Почта для входа</span>
-            <span className="break-words">{membership.email}</span>
-          </div>
+          {/* A demo guest signed in anonymously: no email, no password. */}
+          {!membership.isDemo && (
+            <div className="flex flex-col gap-1">
+              <span className="text-small text-muted-foreground">Почта для входа</span>
+              <span className="break-words">{membership.email}</span>
+            </div>
+          )}
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Link href="/reset-password" className={cn(buttonVariants({ variant: "outline" }))}>
-              <KeyRoundIcon data-icon="inline-start" />
-              Сменить пароль
-            </Link>
+            {!membership.isDemo && (
+              <Link href="/reset-password" className={cn(buttonVariants({ variant: "outline" }))}>
+                <KeyRoundIcon data-icon="inline-start" />
+                Сменить пароль
+              </Link>
+            )}
             <form action={signOut}>
               <Button type="submit" variant="outline" className="w-full">
                 <LogOutIcon data-icon="inline-start" />
