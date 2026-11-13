@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { OfflineBanner, ServiceWorkerRegister } from "@/components/service-worker";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -17,6 +18,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Balans",
   description: "Онлайн-тетрадь доходов и расходов для небольшого бизнеса",
+  // iPhone: full screen from the home screen, name under the icon.
+  appleWebApp: { capable: true, title: "Balans", statusBarStyle: "default" },
 };
 
 // Matches --background in globals.css for each system theme.
@@ -42,8 +45,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Перейти к содержимому
         </a>
         <ThemeProvider>
+          <OfflineBanner />
           {children}
           <Toaster />
+          <ServiceWorkerRegister />
         </ThemeProvider>
       </body>
     </html>
