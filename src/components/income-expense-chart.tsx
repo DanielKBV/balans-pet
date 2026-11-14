@@ -21,6 +21,7 @@ const chartConfig = {
 
 /** 250000 → «250 тыс.», 1500000 → «1,5 млн». */
 function axisLabel(value: number): string {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toLocaleString("ru-RU")} млрд`
   if (value >= 1_000_000) return `${(value / 1_000_000).toLocaleString("ru-RU")} млн`
   if (value >= 1_000) return `${(value / 1_000).toLocaleString("ru-RU")} тыс.`
   return String(value)

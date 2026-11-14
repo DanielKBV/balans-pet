@@ -24,7 +24,7 @@ export function StatCard({
   const ChangeIcon = change !== undefined && change < 0 ? ArrowDownRightIcon : ArrowUpRightIcon
 
   return (
-    <Card className="gap-2 px-(--card-spacing)">
+    <Card className="@container gap-2 px-(--card-spacing)">
       <p className="text-small text-muted-foreground">{label}</p>
       <p className="text-display">{formatSom(amount)}</p>
       {change !== undefined && (

@@ -29,7 +29,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <main id="main" className="page-container flex flex-1 justify-center py-10 md:py-16">
+      <main id="main" className="page-container flex flex-1 items-center justify-center pt-10 pb-[max(2.5rem,12vh)]">
         <Card className="h-fit w-full max-w-sm gap-6 px-(--card-spacing)">{children}</Card>
       </main>
     </>

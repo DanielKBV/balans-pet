@@ -261,8 +261,10 @@ async function Recent() {
       {data.map((entry) => (
         <li key={entry.id} className="flex min-h-row items-center justify-between gap-4 py-2">
           <div className="flex min-w-0 flex-col">
-            <span className="break-words">{entry.category?.name}</span>
-            <span className="text-small text-muted-foreground">
+            <span className="line-clamp-2 break-words" title={entry.category?.name}>
+              {entry.category?.name}
+            </span>
+            <span className="line-clamp-2 text-small break-words text-muted-foreground">
               <span className="tabular-nums">{formatDate(entry.entry_date)}</span>
               {entry.comment && <span className="break-words"> · {entry.comment}</span>}
             </span>

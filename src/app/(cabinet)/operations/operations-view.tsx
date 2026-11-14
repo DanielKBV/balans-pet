@@ -104,7 +104,9 @@ const columns = helper.columns([
     enableSorting: false,
     cell: (info) => (
       <>
-        {info.row.original.category?.name}
+        <span className="block max-w-64 truncate" title={info.row.original.category?.name}>
+          {info.row.original.category?.name}
+        </span>
         {/* Below 1280px there is no room for «Кто внёс», so the name goes under the category. */}
         {info.row.original.author && (
           <span className="block max-w-48 truncate text-small text-muted-foreground xl:hidden">
@@ -118,7 +120,7 @@ const columns = helper.columns([
     id: "comment",
     header: "Комментарий",
     enableSorting: false,
-    cell: (info) => <span className="line-clamp-2 text-muted-foreground">{info.getValue() || "—"}</span>,
+    cell: (info) => <span className="line-clamp-2 break-words text-muted-foreground">{info.getValue() || "—"}</span>,
   }),
   helper.accessor("author", {
     id: "author",
@@ -391,17 +393,21 @@ export function OperationsView({
                 {rows.map((entry) => (
                   <li key={entry.id} className="flex items-start gap-2 py-3 pr-1 pl-4">
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <span className="min-w-0 font-medium break-words">{entry.category?.name}</span>
-                        <Money amount={entry.amount} type={entry.type} className="shrink-0 font-medium" />
-                      </div>
-                      <p className="text-small text-muted-foreground">
+                      {/* Long texts stop at two lines; the edit dialog shows them in full. */}
+                      <span className="line-clamp-2 font-medium break-words" title={entry.category?.name}>
+                        {entry.category?.name}
+                      </span>
+                      <p className="line-clamp-2 text-small break-words text-muted-foreground">
                         <span className="tabular-nums">{formatDate(entry.entry_date)}</span>
                         {isOwner && <span className="break-words"> · {entry.author}</span>}
                         {entry.comment && <span className="break-words"> · {entry.comment}</span>}
                       </p>
                     </div>
-                    <RowActions entry={entry} categories={categories} isOwner={isOwner} today={today} />
+                    {/* The amount sits on the category line, the buttons on the date line. */}
+                    <div className="flex shrink-0 flex-col items-end">
+                      <Money amount={entry.amount} type={entry.type} className="pr-3 font-medium whitespace-nowrap" />
+                      <RowActions entry={entry} categories={categories} isOwner={isOwner} today={today} />
+                    </div>
                   </li>
                 ))}
               </ul>

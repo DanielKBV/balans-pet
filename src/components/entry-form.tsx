@@ -134,7 +134,8 @@ export function EntryForm({
         name="categoryId"
         control={form.control}
         render={({ field, fieldState }) => (
-          <FieldSet data-invalid={fieldState.invalid}>
+          // A fieldset is as wide as its widest child by default: min-w-0 keeps long categories inside the card.
+          <FieldSet data-invalid={fieldState.invalid} className="min-w-0">
             <FieldLegend>Категория</FieldLegend>
             {typeCategories.length ? (
               <ToggleGroup
@@ -153,7 +154,7 @@ export function EntryForm({
                     ref={index === 0 ? field.ref : undefined}
                     className="max-w-full"
                   >
-                    <span className="truncate">{category.name}</span>
+                    <span className="min-w-0 truncate" title={category.name}>{category.name}</span>
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
