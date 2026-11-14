@@ -12,6 +12,7 @@ const PROTECTED = [
   "/settings",
   "/onboarding",
   "/reset-password",
+  "/admin",
 ]
 const AUTH_ONLY_FOR_GUESTS = ["/login"]
 
