@@ -340,6 +340,11 @@
   table {
     font-variant-numeric: tabular-nums;
   }
+  /* Tailwind v4 dropped the pointer on buttons: return it for everything clickable. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
