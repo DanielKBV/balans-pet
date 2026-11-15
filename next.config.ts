@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -14,6 +15,8 @@ const nextConfig: NextConfig = {
     return [{ source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }] }];
   },
   turbopack: {
+    // Without it Turbopack picks up a stray package-lock.json in the home folder as the root.
+    root: import.meta.dirname,
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],
@@ -23,4 +26,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Reads the request language from src/i18n/request.ts.
+const withNextIntl = createNextIntlPlugin();
+
+export default withNextIntl(nextConfig);

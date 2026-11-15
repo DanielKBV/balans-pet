@@ -1,4 +1,5 @@
 import { ArrowDownRightIcon, ArrowUpRightIcon } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
 import { formatChange, formatSom } from "@/lib/format"
@@ -20,13 +21,15 @@ export function StatCard({
   change?: number
   goodWhen?: "up" | "down"
 }) {
+  const locale = useLocale()
+  const t = useTranslations("dashboard")
   const isGood = change !== undefined && (goodWhen === "up" ? change >= 0 : change <= 0)
   const ChangeIcon = change !== undefined && change < 0 ? ArrowDownRightIcon : ArrowUpRightIcon
 
   return (
     <Card className="@container gap-2 px-(--card-spacing)">
       <p className="text-small text-muted-foreground">{label}</p>
-      <p className="text-display">{formatSom(amount)}</p>
+      <p className="text-display">{formatSom(amount, locale)}</p>
       {change !== undefined && (
         <p className="flex flex-wrap items-center gap-x-1.5 text-small text-muted-foreground">
           <span
@@ -36,9 +39,9 @@ export function StatCard({
             )}
           >
             <ChangeIcon aria-hidden className="size-4" />
-            {formatChange(change)}
+            {formatChange(change, locale)}
           </span>
-          к прошлому месяцу
+          {t("vsLastMonth")}
         </p>
       )}
     </Card>

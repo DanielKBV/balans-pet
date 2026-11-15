@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
+import { useTranslations } from "next-intl"
+import { getTranslations } from "next-intl/server"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -9,15 +11,17 @@ import { createClient } from "@/lib/supabase/server"
 import { EntryForm, type EntryCategory } from "@/components/entry-form"
 import { addEntry } from "./actions"
 
-export const metadata: Metadata = {
-  title: "Добавить запись · Balans",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("entries")
+  return { title: t("addMetaTitle") }
 }
 
 // The heading is static and shows instantly; the form streams in with its categories.
 export default function AddPage() {
+  const t = useTranslations("entries")
   return (
     <div className="flex max-w-xl flex-col gap-6">
-      <h1 className="text-title">Добавить запись</h1>
+      <h1 className="text-title">{t("addTitle")}</h1>
       <Card>
         <CardContent>
           <Suspense fallback={<FormSkeleton />}>
@@ -38,7 +42,7 @@ async function EntryFormLoader() {
     .eq("is_hidden", false)
     .order("created_at")
     .returns<EntryCategory[]>()
-  // Thrown errors show the shared error page with "Повторить".
+  // Thrown errors show the shared error page with "Try again".
   if (error) throw new Error(error.message)
 
   return (

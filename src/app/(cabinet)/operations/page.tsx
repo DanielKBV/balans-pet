@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 import { redirect } from "next/navigation"
+import { useTranslations } from "next-intl"
+import { getTranslations } from "next-intl/server"
 
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -10,8 +12,9 @@ import { createClient } from "@/lib/supabase/server"
 import { OperationsView, type EntryRow, type FilterCategory, type FilterMember } from "./operations-view"
 import { memberName, PAGE_SIZE, parseParams, toSearch } from "./params"
 
-export const metadata: Metadata = {
-  title: "Операции · Balans",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("operations")
+  return { title: t("metaTitle") }
 }
 
 const RANGE_NOT_SATISFIABLE = "PGRST103"
@@ -26,9 +29,10 @@ type EntryData = Omit<EntryRow, "author" | "editable"> & { created_at: string; c
 
 // The heading is static and shows instantly; filters and the table stream in.
 export default function OperationsPage({ searchParams }: PageProps<"/operations">) {
+  const t = useTranslations("operations")
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-title">Операции</h1>
+      <h1 className="text-title">{t("title")}</h1>
       <Suspense fallback={<OperationsSkeleton />}>
         <OperationsData searchParams={searchParams} />
       </Suspense>
@@ -67,7 +71,7 @@ async function OperationsData({ searchParams }: Pick<PageProps<"/operations">, "
   const [entries, categories, members] = await Promise.all([
     query.range(offset, offset + PAGE_SIZE - 1).returns<EntryData[]>(),
     supabase.from("categories").select("id, name, type, is_hidden").order("created_at").returns<FilterCategory[]>(),
-    // Names for «Кто внёс»; an employee sees only their own row, so it is not asked for.
+    // Names for «Added by»; an employee sees only their own row, so it is not asked for.
     isOwner
       ? supabase
           .from("business_members")
@@ -80,16 +84,17 @@ async function OperationsData({ searchParams }: Pick<PageProps<"/operations">, "
 
   // A page past the end (old link, last entry deleted) goes back to the first page.
   if (entries.error?.code === RANGE_NOT_SATISFIABLE) redirect(`/operations${toSearch({ ...params, page: 1 })}`)
-  // Thrown errors show the shared error page with "Повторить".
+  // Thrown errors show the shared error page with "Try again".
   if (entries.error) throw new Error(entries.error.message)
   if (categories.error) throw new Error(categories.error.message)
   if (members.error) throw new Error(members.error.message)
 
   // A removed employee is no longer in the team, but their entries stay.
-  const names = new Map(members.data.map((member) => [member.user_id, memberName(member)]))
+  const t = await getTranslations()
+  const names = new Map(members.data.map((member) => [member.user_id, memberName(member, t("common.noName"))]))
   const rows: EntryRow[] = entries.data.map(({ created_at, created_by, ...entry }) => ({
     ...entry,
-    author: isOwner ? (created_by && names.get(created_by)) || "Бывший сотрудник" : "",
+    author: isOwner ? (created_by && names.get(created_by)) || t("operations.formerMember") : "",
     editable: isOwner || isFresh(created_at),
   }))
 

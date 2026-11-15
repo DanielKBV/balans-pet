@@ -8,29 +8,39 @@ import {
   UsersIcon,
   type LucideIcon,
 } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
+import { LocaleToggle } from "@/components/locale-toggle"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 
-type NavItem = { href: string; label: string; Icon: LucideIcon; inBottomNav: boolean; ownerOnly: boolean }
+/** `label` is a key in the `nav` dictionary section. */
+type NavItem = {
+  href: string
+  label: "dashboard" | "operations" | "add" | "categories" | "team" | "settings"
+  Icon: LucideIcon
+  inBottomNav: boolean
+  ownerOnly: boolean
+}
 
 export const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Дашборд", Icon: LayoutDashboardIcon, inBottomNav: true, ownerOnly: true },
-  { href: "/operations", label: "Операции", Icon: ArrowLeftRightIcon, inBottomNav: true, ownerOnly: false },
-  { href: "/add", label: "Добавить", Icon: PlusIcon, inBottomNav: true, ownerOnly: false },
-  { href: "/categories", label: "Категории", Icon: TagsIcon, inBottomNav: false, ownerOnly: true },
-  { href: "/team", label: "Команда", Icon: UsersIcon, inBottomNav: false, ownerOnly: true },
-  { href: "/settings", label: "Настройки", Icon: SettingsIcon, inBottomNav: true, ownerOnly: false },
+  { href: "/dashboard", label: "dashboard", Icon: LayoutDashboardIcon, inBottomNav: true, ownerOnly: true },
+  { href: "/operations", label: "operations", Icon: ArrowLeftRightIcon, inBottomNav: true, ownerOnly: false },
+  { href: "/add", label: "add", Icon: PlusIcon, inBottomNav: true, ownerOnly: false },
+  { href: "/categories", label: "categories", Icon: TagsIcon, inBottomNav: false, ownerOnly: true },
+  { href: "/team", label: "team", Icon: UsersIcon, inBottomNav: false, ownerOnly: true },
+  { href: "/settings", label: "settings", Icon: SettingsIcon, inBottomNav: true, ownerOnly: false },
 ]
 
-/** Menu items for the role: an employee sees only Операции, Добавить and Настройки. */
+/** Menu items for the role: an employee sees only Transactions, Add and Settings. */
 export function navItemsFor(isOwner: boolean) {
   return navItems.filter((item) => isOwner || !item.ownerOnly)
 }
 
 /** Left menu, 240px. The caller decides visibility (shown from lg). */
 export function Sidebar({ active, isOwner = true, className }: { active?: string; isOwner?: boolean; className?: string }) {
+  const t = useTranslations("nav")
   return (
     <aside
       className={cn(
@@ -41,7 +51,7 @@ export function Sidebar({ active, isOwner = true, className }: { active?: string
       <div className="flex h-header items-center px-4">
         <Logo />
       </div>
-      <nav aria-label="Главное меню" className="flex flex-col gap-0.5 p-2">
+      <nav aria-label={t("main")} className="flex flex-col gap-0.5 p-2">
         {navItemsFor(isOwner).map(({ href, label, Icon }) => {
           const isActive = href === active
           return (
@@ -55,7 +65,7 @@ export function Sidebar({ active, isOwner = true, className }: { active?: string
               )}
             >
               <Icon aria-hidden className={cn("size-5", !isActive && "text-muted-foreground")} />
-              {label}
+              {t(label)}
             </Link>
           )
         })}
@@ -66,9 +76,10 @@ export function Sidebar({ active, isOwner = true, className }: { active?: string
 
 /** Phone bottom menu, 64px + iPhone safe area. The caller positions it (fixed, below lg). */
 export function BottomNav({ active, isOwner = true, className }: { active?: string; isOwner?: boolean; className?: string }) {
+  const t = useTranslations("nav")
   return (
     <nav
-      aria-label="Главное меню"
+      aria-label={t("main")}
       className={cn(
         "border-t border-border bg-card pb-[env(safe-area-inset-bottom)]",
         className
@@ -90,7 +101,7 @@ export function BottomNav({ active, isOwner = true, className }: { active?: stri
                   )}
                 >
                   <Icon aria-hidden className="size-5" />
-                  {label}
+                  {t(label)}
                 </Link>
               </li>
             )
@@ -115,8 +126,11 @@ export function AppHeader({
         className
       )}
     >
-      <Logo className="lg:hidden" />
+      {/* On a phone only the «B» mark: the business name needs the room next to the language and theme buttons. */}
+      <Logo withWordmark={false} className="sm:hidden" />
+      <Logo className="hidden sm:inline-flex lg:hidden" />
       <div className="min-w-0 flex-1">{children}</div>
+      <LocaleToggle />
       <ThemeToggle />
     </header>
   )

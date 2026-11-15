@@ -1,8 +1,10 @@
 "use client"
 
 import type { ComponentProps } from "react"
+import { useLocale } from "next-intl"
 
 import { Input } from "@/components/ui/input"
+import { currencyLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 const NBSP = " "
@@ -20,8 +22,9 @@ export function formatAmountInput(value: string): string {
   return trimmed.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
 }
 
-/** Amount field: 56px, numeric keyboard, «сом» inside on the right. Works with `register` (uncontrolled). */
+/** Amount field: 56px, numeric keyboard, «сом» / «KGS» inside on the right. Works with `register` (uncontrolled). */
 export function AmountInput({ className, onChange, ...props }: ComponentProps<"input">) {
+  const locale = useLocale()
   return (
     <div className="relative">
       <Input
@@ -49,7 +52,7 @@ export function AmountInput({ className, onChange, ...props }: ComponentProps<"i
         {...props}
       />
       <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted-foreground">
-        сом
+        {currencyLabel(locale)}
       </span>
     </div>
   )

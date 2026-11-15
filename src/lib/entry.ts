@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import type { Translate } from "@/i18n/config"
+
 export type EntryType = "income" | "expense"
 
 export const MAX_AMOUNT = 1_000_000_000
@@ -15,37 +17,37 @@ export function todayInBishkek(): string {
  * One schema for the form and the server action: the browser shows the errors,
  * the server checks the same rules again before writing.
  * Form values are strings; the parsed result is ready for the database.
+ * `t` gives the error texts in the visitor's language.
  */
-export const entrySchema = z.object({
-  type: z.enum(["income", "expense"], { error: "Выберите доход или расход" }),
-  amount: z
-    .string()
-    .transform((value) => value.replace(/\s/g, ""))
-    .pipe(
-      z
-        .string()
-        .min(1, "Введите сумму")
-        .regex(/^\d+$/, "Только целые сомы, без копеек")
-        .transform(Number)
-        .pipe(
-          z
-            .number()
-            .min(1, "Сумма должна быть больше нуля")
-            .max(MAX_AMOUNT, "Слишком большая сумма")
-        )
-    ),
-  categoryId: z.string().min(1, "Выберите категорию"),
-  date: z
-    .string()
-    .min(1, "Укажите дату")
-    .pipe(z.iso.date("Укажите дату"))
-    .refine((date) => date >= MIN_DATE, "Слишком ранняя дата")
-    .refine((date) => date <= todayInBishkek(), "Дата не может быть в будущем"),
-  comment: z.string().trim().max(MAX_COMMENT, `Не больше ${MAX_COMMENT} символов`),
-})
+export function entrySchema(t: Translate) {
+  return z.object({
+    type: z.enum(["income", "expense"], { error: t("entries.typeRequired") }),
+    amount: z
+      .string()
+      .transform((value) => value.replace(/s/g, ""))
+      .pipe(
+        z
+          .string()
+          .min(1, t("entries.amountRequired"))
+          .regex(/^d+$/, t("entries.wholeOnly"))
+          .transform(Number)
+          .pipe(z.number().min(1, t("entries.positive")).max(MAX_AMOUNT, t("entries.tooLarge")))
+      ),
+    categoryId: z.string().min(1, t("entries.categoryRequired")),
+    date: z
+      .string()
+      .min(1, t("entries.dateRequired"))
+      .pipe(z.iso.date(t("entries.dateRequired")))
+      .refine((date) => date >= MIN_DATE, t("entries.tooEarly"))
+      .refine((date) => date <= todayInBishkek(), t("entries.future")),
+    comment: z.string().trim().max(MAX_COMMENT, t("common.maxLength", { max: MAX_COMMENT })),
+  })
+}
 
-export type EntryFormValues = z.input<typeof entrySchema>
-export type EntryValues = z.output<typeof entrySchema>
+type EntrySchema = ReturnType<typeof entrySchema>
+
+export type EntryFormValues = z.input<EntrySchema>
+export type EntryValues = z.output<EntrySchema>
 
 export type EntrySaveResult = { error?: string }
 
@@ -53,8 +55,8 @@ const FOREIGN_KEY_VIOLATION = "23503"
 const RLS_VIOLATION = "42501"
 
 /** Database error code → message for the person filling in the form. */
-export function entrySaveError(code: string): EntrySaveResult {
-  if (code === FOREIGN_KEY_VIOLATION) return { error: "Категория не найдена. Обновите страницу" }
-  if (code === RLS_VIOLATION) return { error: "Категория скрыта или нет прав. Обновите страницу" }
-  return { error: "Не удалось сохранить. Попробуйте ещё раз" }
+export function entrySaveError(code: string, t: Translate): EntrySaveResult {
+  if (code === FOREIGN_KEY_VIOLATION) return { error: t("entries.categoryMissing") }
+  if (code === RLS_VIOLATION) return { error: t("entries.categoryHidden") }
+  return { error: t("common.saveFailed") }
 }

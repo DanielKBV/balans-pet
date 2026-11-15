@@ -108,7 +108,7 @@ function CountCard({ label, value }: { label: string; value: number }) {
   )
 }
 
-const lastActivity = (business: Business) => (business.last_activity ? formatMoment(business.last_activity) : "—")
+const lastActivity = (business: Business) => (business.last_activity ? formatMoment(business.last_activity, "ru") : "—")
 const owner = (business: Business) => business.owner_name || business.owner_email || "—"
 // The name is the email until the person sets one: then the email line would repeat it.
 const ownerEmail = (business: Business) =>
@@ -153,7 +153,7 @@ function BusinessList({ businesses }: { businesses: Business[] }) {
                 <TableCell className="text-right tabular-nums">{count.format(business.members)}</TableCell>
                 <TableCell className="text-right tabular-nums">{count.format(business.entries)}</TableCell>
                 <TableCell className="tabular-nums">{lastActivity(business)}</TableCell>
-                <TableCell className="tabular-nums">{formatMoment(business.created_at)}</TableCell>
+                <TableCell className="tabular-nums">{formatMoment(business.created_at, "ru")}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -175,7 +175,7 @@ function BusinessList({ businesses }: { businesses: Business[] }) {
                 Участников: {count.format(business.members)} · Записей: {count.format(business.entries)}
               </span>
               <span className="text-small text-muted-foreground tabular-nums">
-                Активность: {lastActivity(business)} · Создан: {formatMoment(business.created_at)}
+                Активность: {lastActivity(business)} · Создан: {formatMoment(business.created_at, "ru")}
               </span>
             </li>
           ))}

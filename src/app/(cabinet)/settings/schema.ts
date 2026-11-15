@@ -1,19 +1,25 @@
 import { z } from "zod"
 
+import type { Translate } from "@/i18n/config"
+
 const MAX_LENGTH = 100
 
-function text(empty: string) {
-  return z.string().trim().min(1, empty).max(MAX_LENGTH, `Не больше ${MAX_LENGTH} символов`)
+function text(empty: string, t: Translate) {
+  return z.string().trim().min(1, empty).max(MAX_LENGTH, t("common.maxLength", { max: MAX_LENGTH }))
 }
 
 /** One schema for the form and the server action. */
-export const businessSchema = z.object({
-  name: text("Введите название бизнеса"),
-  activity: text("Укажите вид деятельности"),
-})
+export function businessSchema(t: Translate) {
+  return z.object({
+    name: text(t("business.nameRequired"), t),
+    activity: text(t("business.activityRequired"), t),
+  })
+}
 
-export type BusinessValues = z.infer<typeof businessSchema>
+export type BusinessValues = z.infer<ReturnType<typeof businessSchema>>
 
-export const displayNameSchema = text("Введите имя")
+export function displayNameSchema(t: Translate) {
+  return text(t("settings.displayNameRequired"), t)
+}
 
 export type SettingsResult = { error?: string }

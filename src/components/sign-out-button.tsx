@@ -2,6 +2,7 @@
 
 import { useFormStatus } from "react-dom"
 import { LogOutIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import { signOut } from "@/app/login/actions"
 import { Button } from "@/components/ui/button"
@@ -18,8 +19,9 @@ export function SignOutIconButton() {
 
 function SubmitIcon() {
   const { pending } = useFormStatus()
+  const t = useTranslations("common")
   return (
-    <Button type="submit" variant="ghost" size="icon" aria-label="Выйти" title="Выйти" disabled={pending}>
+    <Button type="submit" variant="ghost" size="icon" aria-label={t("signOut")} title={t("signOut")} disabled={pending}>
       {pending ? <Spinner className="size-5" /> : <LogOutIcon className="size-5 text-muted-foreground" />}
     </Button>
   )

@@ -3,6 +3,8 @@ import { cache, Suspense } from "react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ArrowRightIcon, PlusIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
+import { getLocale, getTranslations } from "next-intl/server"
 
 import { BlockError } from "@/components/block-error"
 import { IncomeExpenseChart } from "@/components/income-expense-chart"
@@ -29,8 +31,9 @@ import {
 } from "@/lib/month"
 import { createClient } from "@/lib/supabase/server"
 
-export const metadata: Metadata = {
-  title: "Дашборд · Balans",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("dashboard")
+  return { title: t("metaTitle") }
 }
 
 const CHART_MONTHS = 6
@@ -39,10 +42,11 @@ type SearchParams = PageProps<"/dashboard">["searchParams"]
 
 // The heading is static and shows instantly; every block streams in behind its own skeleton.
 export default function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
+  const t = useTranslations("dashboard")
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <h1 className="text-title">Дашборд</h1>
+        <h1 className="text-title">{t("title")}</h1>
         <Suspense fallback={<Skeleton className="h-11 w-64 rounded-lg" />}>
           <Switcher searchParams={searchParams} />
         </Suspense>
@@ -56,7 +60,7 @@ export default function DashboardPage({ searchParams }: PageProps<"/dashboard">)
 
 /** Owner check and the month from the address, shared by the switcher and the blocks. */
 async function readMonth(searchParams: SearchParams): Promise<Month> {
-  // Employees never see totals: their main page is «Добавить запись».
+  // Employees never see totals: their main page is «Add entry».
   const membership = await getMembership()
   if (membership?.role !== "owner") redirect("/add")
   return parseMonth((await searchParams).month)
@@ -66,9 +70,10 @@ const hrefFor = (month: Month) => (month === currentMonth() ? "/dashboard" : `/d
 
 async function Switcher({ searchParams }: { searchParams: SearchParams }) {
   const month = await readMonth(searchParams)
+  const locale = await getLocale()
   return (
     <MonthSwitcher
-      title={monthTitle(month)}
+      title={monthTitle(month, locale)}
       prevHref={hrefFor(addMonths(month, -1))}
       nextHref={month === currentMonth() ? null : hrefFor(addMonths(month, 1))}
     />
@@ -77,10 +82,12 @@ async function Switcher({ searchParams }: { searchParams: SearchParams }) {
 
 async function Blocks({ searchParams }: { searchParams: SearchParams }) {
   const month = await readMonth(searchParams)
+  const locale = await getLocale()
+  const t = await getTranslations("dashboard")
 
   return (
     <div className="flex flex-col gap-6">
-      <BlockError title="Не удалось загрузить итоги месяца" card>
+      <BlockError title={t("statsError")} card>
         <Suspense fallback={<StatsSkeleton />}>
           <Stats month={month} />
         </Suspense>
@@ -90,14 +97,14 @@ async function Blocks({ searchParams }: { searchParams: SearchParams }) {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>
-              <h2>Доходы и расходы</h2>
+              <h2>{t("chartTitle")}</h2>
             </CardTitle>
             <CardDescription>
-              {monthTitle(addMonths(month, 1 - CHART_MONTHS))} — {monthTitle(month)}
+              {monthTitle(addMonths(month, 1 - CHART_MONTHS), locale)} — {monthTitle(month, locale)}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BlockError title="Не удалось загрузить график">
+            <BlockError title={t("chartError")}>
               <Suspense fallback={<Skeleton className="h-72 w-full rounded-lg" />}>
                 <Chart month={month} />
               </Suspense>
@@ -108,12 +115,12 @@ async function Blocks({ searchParams }: { searchParams: SearchParams }) {
         <Card>
           <CardHeader>
             <CardTitle>
-              <h2>Топ расходов</h2>
+              <h2>{t("topTitle")}</h2>
             </CardTitle>
-            <CardDescription>За {monthName(month)}</CardDescription>
+            <CardDescription>{t("topFor", { month: monthName(month, locale) })}</CardDescription>
           </CardHeader>
           <CardContent>
-            <BlockError title="Не удалось загрузить расходы">
+            <BlockError title={t("topError")}>
               <Suspense fallback={<ListSkeleton rows={5} />}>
                 <Top month={month} />
               </Suspense>
@@ -125,16 +132,16 @@ async function Blocks({ searchParams }: { searchParams: SearchParams }) {
       <Card>
         <CardHeader className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle>
-            <h2>Последние записи</h2>
+            <h2>{t("recentTitle")}</h2>
           </CardTitle>
           {/* Negative margins equal to the padding (16px left, 12px before the icon): the text lines up with the card edge, wrapped or not. */}
           <Button variant="ghost" className="-mr-3 -ml-4" render={<Link href="/operations" />} nativeButton={false}>
-            Все операции
+            {t("allOperations")}
             <ArrowRightIcon data-icon="inline-end" />
           </Button>
         </CardHeader>
         <CardContent>
-          <BlockError title="Не удалось загрузить записи">
+          <BlockError title={t("recentError")}>
             <Suspense fallback={<ListSkeleton rows={5} />}>
               <Recent />
             </Suspense>
@@ -155,7 +162,7 @@ const getMonthlyTotals = cache(async (month: Month) => {
     p_from: firstDay(addMonths(month, 1 - CHART_MONTHS)),
     p_to: lastDay(month),
   })
-  // Thrown errors show the block's own error state with "Повторить".
+  // Thrown errors show the block's own error state with "Try again".
   if (error) throw new Error(error.message)
   const byMonth = new Map(
     (data as { month: string; income: number; expense: number }[]).map((row) => [row.month.slice(0, 7), row])
@@ -181,18 +188,19 @@ async function Stats({ month }: { month: Month }) {
   const previous = totals[CHART_MONTHS - 2]
   const profit = current.income - current.expense
   const previousProfit = previous.income - previous.expense
-  const name = monthName(month)
+  const t = await getTranslations("dashboard")
+  const forMonth = { month: monthName(month, await getLocale()) }
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <StatCard label={`Выручка за ${name}`} amount={current.income} change={change(current.income, previous.income)} />
+      <StatCard label={t("revenueFor", forMonth)} amount={current.income} change={change(current.income, previous.income)} />
       <StatCard
-        label={`Расходы за ${name}`}
+        label={t("expensesFor", forMonth)}
         amount={current.expense}
         change={change(current.expense, previous.expense)}
         goodWhen="down"
       />
-      <StatCard label={`Прибыль за ${name}`} amount={profit} change={change(profit, previousProfit)} />
+      <StatCard label={t("profitFor", forMonth)} amount={profit} change={change(profit, previousProfit)} />
     </div>
   )
 }
@@ -200,9 +208,11 @@ async function Stats({ month }: { month: Month }) {
 async function Chart({ month }: { month: Month }) {
   const totals = await getMonthlyTotals(month)
   if (totals.every((row) => !row.income && !row.expense)) {
-    return <StateMessage variant="empty" title="За полгода записей нет" description="График появится после первых записей." />
+    const t = await getTranslations("dashboard")
+    return <StateMessage variant="empty" title={t("chartEmptyTitle")} description={t("chartEmptyText")} />
   }
-  return <IncomeExpenseChart data={totals.map((row) => ({ ...row, month: monthShort(row.month) }))} />
+  const locale = await getLocale()
+  return <IncomeExpenseChart data={totals.map((row) => ({ ...row, month: monthShort(row.month, locale) }))} />
 }
 
 async function Top({ month }: { month: Month }) {
@@ -215,7 +225,9 @@ async function Top({ month }: { month: Month }) {
   const items = (data as CategoryTotal[]).map((row) => ({ name: row.name, total: Number(row.total) }))
 
   if (!items.length) {
-    return <StateMessage variant="empty" title={`Расходов за ${monthName(month)} нет`} className="py-6" />
+    const t = await getTranslations("dashboard")
+    const name = monthName(month, await getLocale())
+    return <StateMessage variant="empty" title={t("topEmpty", { month: name })} className="py-6" />
   }
   return <TopExpenses items={items} />
 }
@@ -239,17 +251,18 @@ async function Recent() {
     .limit(5)
     .returns<RecentEntry[]>()
   if (error) throw new Error(error.message)
+  const [t, locale] = await Promise.all([getTranslations("entries"), getLocale()])
 
   if (!data.length) {
     return (
       <StateMessage
         variant="empty"
-        title="Записей пока нет"
-        description="Добавьте первую: выручку или расход за сегодня."
+        title={t("emptyTitle")}
+        description={t("emptyText")}
         action={
           <Button render={<Link href="/add" />} nativeButton={false}>
             <PlusIcon />
-            Добавить запись
+            {t("addTitle")}
           </Button>
         }
       />
@@ -265,7 +278,7 @@ async function Recent() {
               {entry.category?.name}
             </span>
             <span className="line-clamp-2 text-small break-words text-muted-foreground">
-              <span className="tabular-nums">{formatDate(entry.entry_date)}</span>
+              <span className="tabular-nums">{formatDate(entry.entry_date, locale)}</span>
               {entry.comment && <span className="break-words"> · {entry.comment}</span>}
             </span>
           </div>

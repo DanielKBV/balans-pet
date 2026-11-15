@@ -3,7 +3,8 @@
 import * as React from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { DayPicker, getDefaultClassNames, type DayButtonProps } from "react-day-picker"
-import { ru } from "react-day-picker/locale"
+import { enUS, ru } from "react-day-picker/locale"
+import { useLocale } from "next-intl"
 
 import { cn } from "@/lib/utils"
 
@@ -16,18 +17,21 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
-  locale = ru,
+  locale,
   components,
   ...props
 }: React.ComponentProps<typeof DayPicker>) {
   const defaults = getDefaultClassNames()
+  const appLocale = useLocale()
   const navButton =
     "inline-flex size-(--cell-size) items-center justify-center rounded-lg text-muted-foreground outline-none select-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50"
 
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      locale={locale}
+      locale={locale ?? (appLocale === "ru" ? ru : enUS)}
+      // Monday first in both languages: the business lives in Bishkek.
+      weekStartsOn={1}
       className={cn("[--cell-size:--spacing(11)] md:[--cell-size:--spacing(10)]", className)}
       classNames={{
         root: cn("w-fit", defaults.root),

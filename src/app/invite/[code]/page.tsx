@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense, type ReactNode } from "react"
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -10,17 +11,18 @@ import { createClient } from "@/lib/supabase/server"
 import { AuthShell } from "../../login/auth-shell"
 import { AcceptButton } from "./accept-button"
 
-export const metadata: Metadata = {
-  title: "Приглашение · Balans",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("invite")
+  return { title: t("metaTitle") }
 }
 
 type InviteStatus = "active" | "used" | "expired" | "revoked"
 
-const CLOSED: Record<Exclude<InviteStatus, "active">, { title: string; text: string }> = {
-  used: { title: "Ссылка уже использована", text: "Одна ссылка — для одного человека. Попросите владельца прислать новую." },
-  expired: { title: "Срок ссылки истёк", text: "Ссылка действует 7 дней. Попросите владельца прислать новую." },
-  revoked: { title: "Ссылка отозвана", text: "Владелец отменил это приглашение. Если это ошибка, попросите новую ссылку." },
-}
+const CLOSED = {
+  used: { title: "usedTitle", text: "usedText" },
+  expired: { title: "expiredTitle", text: "expiredText" },
+  revoked: { title: "revokedTitle", text: "revokedText" },
+} as const satisfies Record<Exclude<InviteStatus, "active">, { title: string; text: string }>
 
 // Page 4 of the spec: open to guests and signed-in people alike.
 export default function InvitePage({ params }: PageProps<"/invite/[code]">) {
@@ -34,37 +36,35 @@ export default function InvitePage({ params }: PageProps<"/invite/[code]">) {
 }
 
 async function Invite({ params }: Pick<PageProps<"/invite/[code]">, "params">) {
+  const t = await getTranslations()
   const { code } = await params
-  if (!z.uuid().safeParse(code).success) return <NotFound />
+  if (!z.uuid().safeParse(code).success) return <NotFound title={t("invite.notFoundTitle")} text={t("invite.notFoundText")} />
 
   const supabase = await createClient()
   const [{ data: info, error }, { data: auth }] = await Promise.all([
     supabase.rpc("invite_info", { p_code: code }),
     supabase.auth.getClaims(),
   ])
-  // Thrown errors show the shared error page with "Повторить".
+  // Thrown errors show the shared error page with "Try again".
   if (error) throw new Error(error.message)
   const invite = (info as { business_name: string; status: InviteStatus }[])[0]
-  if (!invite) return <NotFound />
+  if (!invite) return <NotFound title={t("invite.notFoundTitle")} text={t("invite.notFoundText")} />
 
   if (invite.status !== "active") {
     const { title, text } = CLOSED[invite.status]
-    return <Message title={title} text={text} />
+    return <Message title={t(`invite.${title}`)} text={t(`invite.${text}`)} />
   }
 
   const back = encodeURIComponent(`/invite/${code}`)
   if (!auth?.claims) {
     return (
-      <Message
-        title={`Вас пригласили в «${invite.business_name}»`}
-        text="Создайте аккаунт или войдите, чтобы вносить выручку и расходы как сотрудник."
-      >
+      <Message title={t("invite.invitedTitle", { business: invite.business_name })} text={t("invite.guestText")}>
         <div className="flex flex-col gap-2">
           <Button className="w-full" render={<Link href={`/login?mode=signup&next=${back}`} />} nativeButton={false}>
-            Зарегистрироваться
+            {t("common.signUp")}
           </Button>
           <Button variant="outline" className="w-full" render={<Link href={`/login?next=${back}`} />} nativeButton={false}>
-            Войти
+            {t("common.signIn")}
           </Button>
         </div>
       </Message>
@@ -75,21 +75,18 @@ async function Invite({ params }: Pick<PageProps<"/invite/[code]">, "params">) {
   if (membership) {
     return (
       <Message
-        title="Вы уже состоите в бизнесе"
-        text={`Ваш аккаунт уже в «${membership.business.name}». В Balans можно состоять только в одном бизнесе. Чтобы вступить в «${invite.business_name}», войдите другим аккаунтом.`}
+        title={t("invite.alreadyTitle")}
+        text={t("invite.alreadyText", { current: membership.business.name, invited: invite.business_name })}
       >
         <Button variant="outline" className="w-full" render={<Link href="/dashboard" />} nativeButton={false}>
-          Перейти в кабинет
+          {t("invite.toCabinet")}
         </Button>
       </Message>
     )
   }
 
   return (
-    <Message
-      title={`Вас пригласили в «${invite.business_name}»`}
-      text="Вы будете сотрудником: вносить записи и видеть свои. Итоги и прибыль видит только владелец."
-    >
+    <Message title={t("invite.invitedTitle", { business: invite.business_name })} text={t("invite.memberText")}>
       <AcceptButton code={code} />
     </Message>
   )
@@ -107,8 +104,8 @@ function Message({ title, text, children }: { title: string; text: string; child
   )
 }
 
-function NotFound() {
-  return <Message title="Ссылка не найдена" text="Проверьте, что скопировали её целиком, или попросите владельца прислать новую." />
+function NotFound({ title, text }: { title: string; text: string }) {
+  return <Message title={title} text={text} />
 }
 
 function InviteSkeleton() {

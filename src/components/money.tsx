@@ -1,3 +1,5 @@
+import { useLocale } from "next-intl"
+
 import { cn } from "@/lib/utils"
 import { formatSom } from "@/lib/format"
 
@@ -11,6 +13,7 @@ export function Money({
   type?: "income" | "expense"
   className?: string
 }) {
+  const locale = useLocale()
   const value = type === "expense" ? -Math.abs(amount) : amount
 
   return (
@@ -22,7 +25,7 @@ export function Money({
         className
       )}
     >
-      {formatSom(value, { signed: type === "income" })}
+      {formatSom(value, locale, { signed: type === "income" })}
     </span>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from "react"
 import { EyeIcon, EyeOffIcon, PencilIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { StateMessage } from "@/components/state-message"
@@ -32,6 +33,7 @@ export function CategorySection({
   title: string
   categories: Category[]
 }) {
+  const t = useTranslations("categories")
   return (
     <Card>
       <CardHeader>
@@ -50,8 +52,8 @@ export function CategorySection({
         ) : (
           <StateMessage
             variant="empty"
-            title="Категорий пока нет"
-            description="Добавьте первую в поле выше."
+            title={t("emptyTitle")}
+            description={t("emptyText")}
           />
         )}
       </CardContent>
@@ -64,6 +66,7 @@ export function CategorySection({
  * disappears as soon as the text changes, an empty field is caught before the server.
  */
 function useNameField(initialName: string, save: (name: string) => Promise<CategoryState>) {
+  const t = useTranslations("categories")
   const [name, setName] = useState(initialName)
   const [error, setError] = useState<string>()
   const [isPending, startTransition] = useTransition()
@@ -76,7 +79,7 @@ function useNameField(initialName: string, save: (name: string) => Promise<Categ
   function submit(event: FormEvent<HTMLFormElement>, onSaved: () => void) {
     event.preventDefault()
     if (!name.trim()) {
-      setError("Введите название категории")
+      setError(t("nameRequired"))
       return
     }
     startTransition(async () => {
@@ -99,6 +102,7 @@ function FieldError({ id, error }: { id: string; error?: string }) {
 }
 
 function AddForm({ type }: { type: "income" | "expense" }) {
+  const t = useTranslations()
   const field = useNameField("", (name) => addCategory(type, name))
   const inputId = `new-${type}`
   const errorId = `${inputId}-error`
@@ -106,12 +110,12 @@ function AddForm({ type }: { type: "income" | "expense" }) {
   return (
     <form noValidate onSubmit={(e) => field.submit(e, () => field.setName(""))} className="flex flex-col gap-2">
       <Label htmlFor={inputId} className="sr-only">
-        Новая категория
+        {t("categories.newCategory")}
       </Label>
       <div className="flex gap-2">
         <Input
           id={inputId}
-          placeholder="Новая категория"
+          placeholder={t("categories.newCategory")}
           maxLength={100}
           value={field.name}
           onChange={(e) => field.onChange(e.target.value)}
@@ -120,7 +124,7 @@ function AddForm({ type }: { type: "income" | "expense" }) {
         />
         <Button type="submit" disabled={field.isPending}>
           {field.isPending && <Spinner />}
-          Добавить
+          {t("common.add")}
         </Button>
       </div>
       <FieldError id={errorId} error={field.error} />
@@ -133,6 +137,8 @@ function CategoryRow({ category }: { category: Category }) {
   // A new key on every open remounts the dialog, so it starts clean.
   const [renameKey, setRenameKey] = useState(0)
   const [isPending, startTransition] = useTransition()
+  const t = useTranslations("categories")
+  const vars = { name: category.name }
 
   function openRename() {
     setRenameKey((key) => key + 1)
@@ -151,12 +157,12 @@ function CategoryRow({ category }: { category: Category }) {
       <span className={category.is_hidden ? "min-w-0 flex-1 truncate text-subtle-foreground" : "min-w-0 flex-1 truncate"}>
         {category.name}
       </span>
-      {category.is_hidden && <Badge variant="outline">Скрыта</Badge>}
+      {category.is_hidden && <Badge variant="outline">{t("hiddenBadge")}</Badge>}
       <Button
         variant="ghost"
         size="icon"
-        aria-label={`Переименовать «${category.name}»`}
-        title="Переименовать"
+        aria-label={t("renameAria", vars)}
+        title={t("rename")}
         onClick={openRename}
       >
         <PencilIcon className="size-5 text-muted-foreground" />
@@ -164,9 +170,9 @@ function CategoryRow({ category }: { category: Category }) {
       <Button
         variant="ghost"
         size="icon"
-        aria-label={category.is_hidden ? `Показать «${category.name}»` : `Скрыть «${category.name}»`}
+        aria-label={category.is_hidden ? t("showAria", vars) : t("hideAria", vars)}
         aria-busy={isPending}
-        title={category.is_hidden ? "Показать" : "Скрыть"}
+        title={category.is_hidden ? t("show") : t("hide")}
         disabled={isPending}
         onClick={toggleHidden}
       >
@@ -192,6 +198,7 @@ function RenameDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const t = useTranslations()
   const field = useNameField(category.name, (name) => renameCategory(category.id, name))
   const inputId = `rename-${category.id}`
   const errorId = `${inputId}-error`
@@ -201,10 +208,10 @@ function RenameDialog({
       <DialogContent>
         <form noValidate onSubmit={(e) => field.submit(e, () => onOpenChange(false))} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Переименовать категорию</DialogTitle>
+            <DialogTitle>{t("categories.renameTitle")}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Label htmlFor={inputId}>Название</Label>
+            <Label htmlFor={inputId}>{t("categories.name")}</Label>
             <Input
               id={inputId}
               maxLength={100}
@@ -216,10 +223,10 @@ function RenameDialog({
             <FieldError id={errorId} error={field.error} />
           </div>
           <DialogFooter>
-            <DialogClose render={<Button variant="ghost" />}>Отмена</DialogClose>
+            <DialogClose render={<Button variant="ghost" />}>{t("common.cancel")}</DialogClose>
             <Button type="submit" disabled={field.isPending}>
               {field.isPending && <Spinner />}
-              Сохранить
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </form>

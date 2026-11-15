@@ -1,6 +1,7 @@
 "use client"
 
 import { useActionState } from "react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { PasswordInput } from "@/components/password-input"
@@ -9,12 +10,13 @@ import { Spinner } from "@/components/ui/spinner"
 import { updatePassword, type PasswordState } from "./actions"
 
 export function PasswordForm() {
+  const t = useTranslations()
   const [state, formAction, isPending] = useActionState<PasswordState, FormData>(updatePassword, {})
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Новый пароль</Label>
+        <Label htmlFor="password">{t("resetPassword.title")}</Label>
         <PasswordInput
           id="password"
           name="password"
@@ -22,10 +24,10 @@ export function PasswordForm() {
           minLength={6}
           required
         />
-        <p className="text-small text-muted-foreground">Не меньше 6 символов</p>
+        <p className="text-small text-muted-foreground">{t("auth.passwordHint")}</p>
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="confirm">Повторите пароль</Label>
+        <Label htmlFor="confirm">{t("resetPassword.confirm")}</Label>
         <PasswordInput
           id="confirm"
           name="confirm"
@@ -43,7 +45,7 @@ export function PasswordForm() {
 
       <Button type="submit" disabled={isPending} className="w-full">
         {isPending && <Spinner />}
-        Сохранить пароль
+        {t("resetPassword.submit")}
       </Button>
     </form>
   )

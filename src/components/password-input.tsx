@@ -2,6 +2,7 @@
 
 import { useState, type ComponentProps } from "react"
 import { EyeIcon, EyeOffIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input"
 /** Password field with a show/hide toggle inside on the right. */
 export function PasswordInput({ className, ...props }: Omit<ComponentProps<"input">, "type">) {
   const [visible, setVisible] = useState(false)
+  const t = useTranslations("auth")
   const Icon = visible ? EyeOffIcon : EyeIcon
 
   return (
@@ -17,7 +19,7 @@ export function PasswordInput({ className, ...props }: Omit<ComponentProps<"inpu
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? "Скрыть пароль" : "Показать пароль"}
+        aria-label={visible ? t("hidePassword") : t("showPassword")}
         aria-pressed={visible}
         disabled={props.disabled}
         className="absolute top-0 right-0 flex size-control items-center justify-center rounded-lg text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { CopyIcon, LinkIcon, Trash2Icon } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -42,7 +43,9 @@ export function MemberList({ members, businessName }: { members: Member[]; busin
 function MemberRow({ member, businessName }: { member: Member; businessName: string }) {
   const [isConfirming, setIsConfirming] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const name = member.display_name ?? member.email ?? "Без имени"
+  const locale = useLocale()
+  const t = useTranslations()
+  const name = member.display_name ?? member.email ?? t("common.noName")
 
   function remove() {
     startTransition(async () => {
@@ -52,7 +55,7 @@ function MemberRow({ member, businessName }: { member: Member; businessName: str
         return
       }
       setIsConfirming(false)
-      toast.success(`${name} больше не в команде`)
+      toast.success(t("team.removed", { name }))
     })
   }
 
@@ -62,11 +65,12 @@ function MemberRow({ member, businessName }: { member: Member; businessName: str
         <div className="flex flex-wrap items-center gap-2">
           <span className="min-w-0 font-medium break-words">{name}</span>
           <Badge variant={member.role === "owner" ? "secondary" : "outline"}>
-            {member.role === "owner" ? "Владелец" : "Сотрудник"}
+            {member.role === "owner" ? t("team.owner") : t("team.employee")}
           </Badge>
         </div>
         <span className="text-small break-words text-muted-foreground">
-          {member.email && member.email !== name && `${member.email} · `}в команде с {formatMoment(member.created_at)}
+          {member.email && member.email !== name && `${member.email} · `}
+          {t("team.since", { date: formatMoment(member.created_at, locale) })}
         </span>
       </div>
       {member.role === "employee" && (
@@ -74,8 +78,8 @@ function MemberRow({ member, businessName }: { member: Member; businessName: str
           <Button
             variant="ghost"
             size="icon"
-            aria-label={`Удалить «${name}» из команды`}
-            title="Удалить из команды"
+            aria-label={t("team.removeAria", { name })}
+            title={t("team.removeTitle")}
             onClick={() => setIsConfirming(true)}
           >
             <Trash2Icon className="size-5 text-muted-foreground" />
@@ -83,17 +87,14 @@ function MemberRow({ member, businessName }: { member: Member; businessName: str
           <Dialog open={isConfirming} onOpenChange={setIsConfirming}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Удалить из команды?</DialogTitle>
-                <DialogDescription>
-                  {name} больше не сможет вносить записи в «{businessName}». Его записи останутся, в колонке «Кто
-                  внёс» будет «Бывший сотрудник».
-                </DialogDescription>
+                <DialogTitle>{t("team.removeDialogTitle")}</DialogTitle>
+                <DialogDescription>{t("team.removeText", { name, business: businessName })}</DialogDescription>
               </DialogHeader>
               <DialogFooter>
-                <DialogClose render={<Button variant="ghost" />}>Отмена</DialogClose>
+                <DialogClose render={<Button variant="ghost" />}>{t("common.cancel")}</DialogClose>
                 <Button variant="destructive" disabled={isPending} onClick={remove}>
                   {isPending && <Spinner />}
-                  Удалить
+                  {t("team.remove")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -104,9 +105,11 @@ function MemberRow({ member, businessName }: { member: Member; businessName: str
   )
 }
 
-/** One active link at a time: show it with «Скопировать» / «Отозвать», or the button to make one. */
+/** One active link at a time: show it with «Copy link» / «Revoke», or the button to make one. */
 export function InviteBlock({ invite, origin }: { invite: { id: string; expires_at: string } | null; origin: string }) {
   const [isPending, startTransition] = useTransition()
+  const locale = useLocale()
+  const t = useTranslations("team")
 
   function run(action: () => Promise<{ error?: string; warning?: string }>, success?: string) {
     startTransition(async () => {
@@ -120,12 +123,10 @@ export function InviteBlock({ invite, origin }: { invite: { id: string; expires_
   if (!invite) {
     return (
       <div className="flex flex-col items-start gap-4">
-        <p className="text-muted-foreground">
-          Ссылка одноразовая: по ней вступит один человек. Когда он вступит, можно будет создать следующую.
-        </p>
+        <p className="text-muted-foreground">{t("oneTime")}</p>
         <Button disabled={isPending} onClick={() => run(createInvite)}>
           {isPending ? <Spinner /> : <LinkIcon data-icon="inline-start" />}
-          Создать ссылку
+          {t("createLink")}
         </Button>
       </div>
     )
@@ -136,32 +137,29 @@ export function InviteBlock({ invite, origin }: { invite: { id: string; expires_
   async function copy() {
     try {
       await navigator.clipboard.writeText(url)
-      toast.success("Ссылка скопирована")
+      toast.success(t("copied"))
     } catch {
-      toast.error("Не удалось скопировать. Выделите ссылку и скопируйте вручную")
+      toast.error(t("copyFailed"))
     }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-muted-foreground">
-        Отправьте ссылку сотруднику в WhatsApp или Telegram. Она одноразовая и действует до{" "}
-        {formatMoment(invite.expires_at)}.
-      </p>
+      <p className="text-muted-foreground">{t("sendLink", { date: formatMoment(invite.expires_at, locale) })}</p>
       <div className="flex flex-col gap-2">
         <Label htmlFor="invite-url" className="sr-only">
-          Ссылка-приглашение
+          {t("linkLabel")}
         </Label>
         <Input id="invite-url" readOnly value={url} onFocus={(e) => e.currentTarget.select()} className="text-small" />
       </div>
       <div className="flex flex-wrap gap-2 *:flex-1 sm:*:flex-none">
         <Button onClick={copy}>
           <CopyIcon data-icon="inline-start" />
-          Скопировать
+          {t("copy")}
         </Button>
-        <Button variant="ghost" disabled={isPending} onClick={() => run(() => revokeInvite(invite.id), "Ссылка отозвана")}>
+        <Button variant="ghost" disabled={isPending} onClick={() => run(() => revokeInvite(invite.id), t("revoked"))}>
           {isPending && <Spinner />}
-          Отозвать
+          {t("revoke")}
         </Button>
       </div>
     </div>

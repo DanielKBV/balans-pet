@@ -1,11 +1,15 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
+import { getTranslations } from "next-intl/server"
 
+import { LocaleToggle } from "@/components/locale-toggle"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 
-export const metadata: Metadata = {
-  title: "Политика конфиденциальности · Balans",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("privacy")
+  return { title: t("metaTitle") }
 }
 
 const ISSUES_URL = "https://github.com/DanielKBV/balans-pet/issues"
@@ -13,40 +17,16 @@ const ISSUES_URL = "https://github.com/DanielKBV/balans-pet/issues"
 const linkClass =
   "rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
 
+// Keys in the `privacy` dictionary section.
 const sections = [
-  {
-    title: "Какие данные мы храним",
-    items: [
-      "Почту и пароль, если вы регистрируетесь по почте. Пароль хранится только в зашифрованном виде.",
-      "Почту, имя и фото профиля, если вы входите через Google. Доступа к Gmail, Диску, контактам и другим данным Google у Balans нет.",
-      "То, что вы вносите сами: название бизнеса, категории, суммы доходов и расходов, комментарии.",
-      "В демо вход анонимный: ни почты, ни имени. Демо-бизнес и всё, что вы в нём изменили, удаляются через сутки.",
-    ],
-  },
-  {
-    title: "Зачем",
-    items: [
-      "Чтобы вы могли войти в свой аккаунт.",
-      "Чтобы показывать записи, итоги и графики вашего бизнеса вам и вашей команде.",
-    ],
-  },
-  {
-    title: "Кому мы их передаём",
-    items: [
-      "Никому не продаём и не показываем рекламу.",
-      "Данные хранятся в Supabase (база данных и вход), сайт работает на Vercel. Эти сервисы обрабатывают данные только для работы Balans.",
-      "Записи одного бизнеса не видят другие бизнесы. Сотрудник не видит итогов и чужих записей.",
-    ],
-  },
-  {
-    title: "Cookies",
-    items: [
-      "Только для входа: чтобы вам не приходилось вводить пароль на каждой странице. Сторонней аналитики и рекламных cookies нет.",
-    ],
-  },
-]
+  { title: "dataTitle", items: ["dataPassword", "dataGoogle", "dataContent", "dataDemo"] },
+  { title: "whyTitle", items: ["whySignIn", "whyShow"] },
+  { title: "sharingTitle", items: ["sharingNoSale", "sharingServices", "sharingIsolation"] },
+  { title: "cookiesTitle", items: ["cookiesText"] },
+] as const
 
 export default function PrivacyPage() {
+  const t = useTranslations("privacy")
   return (
     <>
       <header className="border-b">
@@ -57,41 +37,42 @@ export default function PrivacyPage() {
           >
             <Logo />
           </Link>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <LocaleToggle />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
       <main id="main" className="page-container flex-1 py-10 md:py-16">
         <article className="flex max-w-2xl flex-col gap-8">
           <div className="flex flex-col gap-2">
-            <h1 className="text-title">Политика конфиденциальности</h1>
-            <p className="text-small text-muted-foreground">Обновлено 14 ноября 2026 года</p>
-            <p className="text-muted-foreground text-pretty">
-              Balans — учебный pet-проект: онлайн-тетрадь доходов и расходов для небольшого бизнеса.
-              Здесь коротко о том, какие данные он хранит и как ими пользуется.
-            </p>
+            <h1 className="text-title">{t("title")}</h1>
+            <p className="text-small text-muted-foreground">{t("updated")}</p>
+            <p className="text-muted-foreground text-pretty">{t("intro")}</p>
           </div>
 
           {sections.map(({ title, items }) => (
             <section key={title} className="flex flex-col gap-3">
-              <h2 className="text-heading">{title}</h2>
+              <h2 className="text-heading">{t(title)}</h2>
               <ul className="flex list-disc flex-col gap-2 pl-5 text-pretty">
                 {items.map((item) => (
-                  <li key={item}>{item}</li>
+                  <li key={item}>{t(item)}</li>
                 ))}
               </ul>
             </section>
           ))}
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-heading">Удаление данных и связь</h2>
+            <h2 className="text-heading">{t("deletionTitle")}</h2>
             <p className="text-pretty">
-              Владелец удаляет бизнес со всеми записями, категориями и командой сам: «Настройки» → «Удалить
-              бизнес». Чтобы удалить и сам аккаунт или задать вопрос, напишите в{" "}
-              <a href={ISSUES_URL} target="_blank" rel="noreferrer" className={linkClass}>
-                Issues репозитория на GitHub
-              </a>
-              . Данные удаляются полностью, без резервной копии.
+              {t.rich("deletionText", {
+                link: (chunks) => (
+                  <a href={ISSUES_URL} target="_blank" rel="noreferrer" className={linkClass}>
+                    {chunks}
+                  </a>
+                ),
+              })}
             </p>
           </section>
         </article>

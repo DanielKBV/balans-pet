@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 import { redirect } from "next/navigation"
+import { useTranslations } from "next-intl"
+import { getTranslations } from "next-intl/server"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -9,15 +11,17 @@ import { siteOrigin } from "@/lib/site-origin"
 import { createClient } from "@/lib/supabase/server"
 import { InviteBlock, MemberList, type Member } from "./team-view"
 
-export const metadata: Metadata = {
-  title: "Команда · Balans",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("team")
+  return { title: t("metaTitle") }
 }
 
 // The heading is static and shows instantly; the lists stream in behind their own skeleton.
 export default function TeamPage() {
+  const t = useTranslations("team")
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <h1 className="text-title">Команда</h1>
+      <h1 className="text-title">{t("title")}</h1>
       <Suspense fallback={<TeamSkeleton />}>
         <Team />
       </Suspense>
@@ -48,23 +52,24 @@ async function Team() {
       .limit(1),
     siteOrigin(),
   ])
-  // Thrown errors show the shared error page with "Повторить".
+  // Thrown errors show the shared error page with "Try again".
   if (members.error) throw new Error(members.error.message)
   if (invites.error) throw new Error(invites.error.message)
+  const t = await getTranslations("team")
 
   return (
     <>
       <Card>
         <CardHeader>
           <CardTitle>
-            <h2>Пригласить сотрудника</h2>
+            <h2>{t("inviteTitle")}</h2>
           </CardTitle>
-          <CardDescription>Сотрудник вносит записи и видит только свои. Итоги и прибыль видите только вы.</CardDescription>
+          <CardDescription>{t("inviteDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           {/* The database refuses invites from a demo guest too. */}
           {membership.isDemo ? (
-            <p className="text-muted-foreground">В демо приглашения выключены. Создайте свой бизнес, чтобы позвать сотрудников.</p>
+            <p className="text-muted-foreground">{t("demoDisabled")}</p>
           ) : (
             <InviteBlock invite={invites.data[0] ?? null} origin={origin} />
           )}
@@ -74,10 +79,10 @@ async function Team() {
       <Card>
         <CardHeader>
           <CardTitle>
-            <h2>Участники</h2>
+            <h2>{t("membersTitle")}</h2>
           </CardTitle>
           <CardDescription>
-            {members.data.length === 1 ? "Пока только вы. Пригласите сотрудника ссылкой выше." : `Всего: ${members.data.length}`}
+            {members.data.length === 1 ? t("onlyYou") : t("total", { count: members.data.length })}
           </CardDescription>
         </CardHeader>
         <CardContent>

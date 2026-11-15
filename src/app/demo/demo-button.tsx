@@ -1,6 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -8,6 +9,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { startDemo } from "./actions"
 
 export function DemoButton() {
+  const t = useTranslations("landing")
   const [isPending, startTransition] = useTransition()
 
   return (
@@ -23,7 +25,7 @@ export function DemoButton() {
       }
     >
       {isPending && <Spinner />}
-      Посмотреть демо
+      {t("viewDemo")}
     </Button>
   )
 }

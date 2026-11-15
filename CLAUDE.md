@@ -11,14 +11,16 @@
 - Next.js 16 (App Router) + TypeScript, папка `src/`
 - Tailwind CSS v4 + shadcn/ui (стиль `base-nova`, примитивы Base UI, иконки `lucide-react`)
 - Supabase: PostgreSQL, Auth (email + пароль, Google), RLS — с этапа 2. Изменения базы — файлы в `supabase/migrations/`, их применяет пользователь в SQL Editor панели Supabase
-- Хостинг Vercel, код на GitHub (публичный репозиторий `balans`)
+- Хостинг Vercel, код на GitHub (публичный репозиторий `balans-pet`)
+- Языки интерфейса: русский и английский, `next-intl` без префикса в адресе (язык в cookie `lang`, ссылка `/?lang=en`). Словари `messages/ru.json` и `messages/en.json`, настройка в `src/i18n/`
 - Отдельного бэкенда нет: серверные действия и route handlers Next.js + Supabase
 
 Next.js 16 отличается от того, что ты знаешь по обучению. Перед кодом смотри документацию в `node_modules/next/dist/docs/` (см. AGENTS.md).
 
 ## Правила продукта
 
-- Интерфейс только на русском.
+- Интерфейс на русском и английском. **Ни одного текста интерфейса прямо в компоненте:** только через `messages/*.json` (`useTranslations` / `getTranslations`), новый текст сразу на двух языках (английский по `docs/launch/SLOVAR_EN.md`). Исключения: `/admin` и `/design` остаются на русском.
+- **Деньги и даты только через общие функции** `src/lib/format.ts` и `src/lib/month.ts` с языком: `16 000 сом` / `16,000 KGS`, `04.11.2026` / `Nov 4, 2026`. Вручную суммы и даты не форматируем.
 - Деньги только в сомах, целые числа, без тыйынов. Выбора валюты нет.
 - Часовой пояс: Asia/Bishkek.
 - Права доступа проверяются в базе (Supabase RLS). Скрытие кнопок в интерфейсе — только для удобства, не защита.

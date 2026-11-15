@@ -1,5 +1,7 @@
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
+import { LocaleToggle } from "@/components/locale-toggle"
 import { Logo } from "@/components/logo"
 import { Money } from "@/components/money"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -81,17 +83,20 @@ const features = [
 ]
 
 function CallToAction() {
+  const t = useTranslations("landing")
   return (
     <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
       <Link href="/login" className={buttonVariants({ size: "lg" })}>
-        Попробовать бесплатно
+        {t("getStarted")}
       </Link>
       <DemoButton />
     </div>
   )
 }
 
+// The landing body is rebuilt in both languages in RUN 2; here only the header, footer and buttons are translated.
 export default function Home() {
+  const t = useTranslations()
   return (
     <>
       <header className="border-b">
@@ -103,9 +108,10 @@ export default function Home() {
             <Logo />
           </Link>
           <div className="flex items-center gap-1">
+            <LocaleToggle />
             <ThemeToggle />
             <Link href="/login" className={buttonVariants({ variant: "ghost" })}>
-              Войти
+              {t("common.signIn")}
             </Link>
           </div>
         </div>
@@ -158,13 +164,13 @@ export default function Home() {
 
       <footer className="border-t">
         <div className="page-container flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-6 text-small text-muted-foreground">
-          <p>Pet-проект Даниэла</p>
+          <p>{t("landing.author")}</p>
           <div className="flex flex-wrap gap-x-6 gap-y-2">
             <Link
               href="/privacy"
               className="rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              Политика конфиденциальности
+              {t("landing.privacy")}
             </Link>
             <a
               href={REPO_URL}
@@ -172,7 +178,7 @@ export default function Home() {
               rel="noreferrer"
               className="rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              Код на GitHub
+              {t("landing.github")}
             </a>
           </div>
         </div>

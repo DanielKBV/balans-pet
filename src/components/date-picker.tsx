@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react"
 import { CalendarIcon, XIcon } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -30,7 +31,7 @@ export function DatePicker({
   onChange,
   min,
   max,
-  placeholder = "Выберите дату",
+  placeholder,
   clearable = false,
   className,
   ...aria
@@ -46,6 +47,8 @@ export function DatePicker({
   "aria-invalid"?: boolean
   "aria-describedby"?: string
 }) {
+  const locale = useLocale()
+  const t = useTranslations("datePicker")
   const [isOpen, setIsOpen] = useState(false)
   const calendarRef = useRef<HTMLDivElement>(null)
   const showClear = clearable && !!value
@@ -62,15 +65,15 @@ export function DatePicker({
           {...aria}
         >
           <span className={cn("truncate", !value && "text-subtle-foreground")}>
-            {value ? formatDate(value) : placeholder}
+            {value ? formatDate(value, locale) : (placeholder ?? t("placeholder"))}
           </span>
           {!showClear && <CalendarIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />}
         </PopoverTrigger>
         {showClear && (
           <button
             type="button"
-            aria-label="Очистить дату"
-            title="Очистить"
+            aria-label={t("clearAria")}
+            title={t("clearTitle")}
             onClick={() => onChange("")}
             className="absolute inset-y-0 right-0 inline-flex size-control items-center justify-center rounded-lg text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
           >

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Controller, useForm, useWatch, type Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { AmountInput, formatAmountInput } from "@/components/amount-input"
@@ -28,12 +29,10 @@ export type EntryCategory = { id: string; name: string; type: EntryType }
 const TYPES = [
   {
     value: "income",
-    label: "Доход",
     pressed: "aria-pressed:border-income aria-pressed:bg-income-subtle aria-pressed:text-income aria-pressed:hover:bg-income-subtle aria-pressed:hover:text-income",
   },
   {
     value: "expense",
-    label: "Расход",
     pressed: "aria-pressed:border-expense aria-pressed:bg-expense-subtle aria-pressed:text-expense aria-pressed:hover:bg-expense-subtle aria-pressed:hover:text-expense",
   },
 ] as const
@@ -50,20 +49,21 @@ export function EntryForm({
   onSaved,
   onCancel,
   defaultValues,
-  successMessage = "Запись добавлена",
+  successMessage,
 }: {
   categories: EntryCategory[]
   today: string
   isOwner: boolean
   save: (values: EntryFormValues) => Promise<EntrySaveResult>
   onSaved?: () => void
-  /** In a dialog: shows «Отмена» to the left of the save button, closing without changes. */
+  /** In a dialog: shows «Cancel» to the left of the save button, closing without changes. */
   onCancel?: () => void
   defaultValues?: EntryFormValues
   successMessage?: string
 }) {
+  const t = useTranslations()
   const form = useForm<EntryFormValues, unknown, EntryValues>({
-    resolver: zodResolver(entrySchema),
+    resolver: zodResolver(entrySchema(t)),
     // Editing opens the stored amount already grouped: «1 000».
     defaultValues: defaultValues
       ? { ...defaultValues, amount: formatAmountInput(defaultValues.amount) }
@@ -82,7 +82,7 @@ export function EntryForm({
       toast.error(result.error)
       return
     }
-    toast.success(successMessage)
+    toast.success(successMessage ?? t("entries.added"))
     if (onSaved) {
       onSaved()
       return
@@ -99,7 +99,7 @@ export function EntryForm({
         control={form.control}
         render={({ field }) => (
           <ToggleGroup
-            aria-label="Тип записи"
+            aria-label={t("entries.typeAria")}
             variant="outline"
             className="w-full"
             value={[field.value]}
@@ -112,7 +112,7 @@ export function EntryForm({
           >
             {TYPES.map((item) => (
               <ToggleGroupItem key={item.value} value={item.value} className={`flex-1 ${item.pressed}`}>
-                {item.label}
+                {t(`common.${item.value}`)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -120,7 +120,7 @@ export function EntryForm({
       />
 
       <Field data-invalid={!!errors.amount}>
-        <FieldLabel htmlFor="amount">Сумма</FieldLabel>
+        <FieldLabel htmlFor="amount">{t("entries.amount")}</FieldLabel>
         <AmountInput
           id="amount"
           aria-invalid={!!errors.amount}
@@ -136,7 +136,7 @@ export function EntryForm({
         render={({ field, fieldState }) => (
           // A fieldset is as wide as its widest child by default: min-w-0 keeps long categories inside the card.
           <FieldSet data-invalid={fieldState.invalid} className="min-w-0">
-            <FieldLegend>Категория</FieldLegend>
+            <FieldLegend>{t("entries.category")}</FieldLegend>
             {typeCategories.length ? (
               <ToggleGroup
                 variant="outline"
@@ -160,13 +160,13 @@ export function EntryForm({
               </ToggleGroup>
             ) : (
               <p className="text-small text-muted-foreground">
-                {type === "income" ? "Нет категорий доходов. " : "Нет категорий расходов. "}
+                {type === "income" ? t("entries.noIncomeCategories") : t("entries.noExpenseCategories")}{" "}
                 {isOwner ? (
                   <Link href="/categories" className="text-primary-text underline-offset-4 hover:underline">
-                    Добавить категорию
+                    {t("entries.addCategory")}
                   </Link>
                 ) : (
-                  "Попросите владельца добавить категорию."
+                  t("entries.askOwner")
                 )}
               </p>
             )}
@@ -176,7 +176,7 @@ export function EntryForm({
       />
 
       <Field data-invalid={!!errors.date}>
-        <FieldLabel htmlFor="date">Дата</FieldLabel>
+        <FieldLabel htmlFor="date">{t("entries.date")}</FieldLabel>
         <Controller
           name="date"
           control={form.control}
@@ -198,12 +198,12 @@ export function EntryForm({
 
       <Field data-invalid={!!errors.comment}>
         <FieldLabel htmlFor="comment">
-          Комментарий <span className="font-normal text-muted-foreground">(необязательно)</span>
+          {t("entries.comment")} <span className="font-normal text-muted-foreground">{t("entries.optional")}</span>
         </FieldLabel>
         <Textarea
           id="comment"
           maxLength={MAX_COMMENT}
-          placeholder="Например: 3 машины, Toyota Camry"
+          placeholder={t("entries.commentPlaceholder")}
           aria-invalid={!!errors.comment}
           aria-describedby={errors.comment ? "comment-error" : undefined}
           {...form.register("comment")}
@@ -212,20 +212,20 @@ export function EntryForm({
       </Field>
 
       {onCancel ? (
-        // Short «Сохранить» (as in other dialogs) so both buttons fit half the width on a phone.
+        // Short «Save» (as in other dialogs) so both buttons fit half the width on a phone.
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onCancel}>
-            Отмена
+            {t("common.cancel")}
           </Button>
           <Button type="submit" disabled={!isChanged || isSubmitting}>
             {isSubmitting && <Spinner />}
-            Сохранить
+            {t("common.save")}
           </Button>
         </DialogFooter>
       ) : (
         <Button type="submit" size="lg" className="w-full sm:w-auto sm:self-start" disabled={isSubmitting}>
           {isSubmitting && <Spinner />}
-          Сохранить запись
+          {t("entries.submit")}
         </Button>
       )}
     </form>

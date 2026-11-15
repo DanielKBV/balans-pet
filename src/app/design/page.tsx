@@ -49,6 +49,8 @@ const topExpenses = [
 export const metadata: Metadata = {
   title: "Дизайн-система · Balans",
   description: "Токены и компоненты интерфейса Balans",
+  // Open to anyone with the link, but not for search results.
+  robots: { index: false },
 }
 
 const colorGroups: { title: string; tokens: [string, string][] }[] = [
@@ -115,7 +117,7 @@ const colorGroups: { title: string; tokens: [string, string][] }[] = [
 
 const typeScale = [
   { cls: "text-hero", meta: "32 → 40 → 48 px · 600 · только лендинг", sample: "Прибыль считается сама" },
-  { cls: "text-display", meta: "28 → 36 px · 600 · цифры", sample: formatSom(1234567) },
+  { cls: "text-display", meta: "28 → 36 px · 600 · цифры", sample: formatSom(1234567, "ru") },
   { cls: "text-title", meta: "24 → 28 px · 600", sample: "Операции за октябрь" },
   { cls: "text-heading", meta: "20 px · 600", sample: "Расходы по категориям" },
   { cls: "text-body", meta: "16 / 1.5 · 400", sample: "Съешь же ещё этих мягких французских булок, да выпей чаю. Ёж, щука, юла." },

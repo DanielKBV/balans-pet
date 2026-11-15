@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useOffline } from "next/offline"
 import { WifiOffIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 /** Registers public/sw.js, which shows /offline.html when a page cannot load without network. */
 export function ServiceWorkerRegister() {
@@ -17,6 +18,7 @@ export function ServiceWorkerRegister() {
 /** Bar on top while the open app has no network. Next keeps saves and navigations pending until it returns. */
 export function OfflineBanner() {
   const isOffline = useOffline()
+  const t = useTranslations("offline")
   if (!isOffline) return null
 
   return (
@@ -25,7 +27,7 @@ export function OfflineBanner() {
       className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-warning-subtle px-4 py-2 text-center text-small text-warning"
     >
       <WifiOffIcon aria-hidden className="size-4 shrink-0" />
-      Нет соединения. Проверьте интернет.
+      {t("banner")}
     </div>
   )
 }

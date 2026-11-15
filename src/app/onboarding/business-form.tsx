@@ -1,6 +1,7 @@
 "use client"
 
 import { useActionState, useState } from "react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +10,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { createBusiness, type BusinessState } from "./actions"
 
 export function BusinessForm() {
+  const t = useTranslations()
   const [state, formAction, isPending] = useActionState<BusinessState, FormData>(createBusiness, {})
   // Controlled: React resets uncontrolled fields after a form action.
   const [name, setName] = useState("")
@@ -17,11 +19,11 @@ export function BusinessForm() {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="name">Название</Label>
+        <Label htmlFor="name">{t("business.name")}</Label>
         <Input
           id="name"
           name="name"
-          placeholder="Автомойка Азамата"
+          placeholder={t("onboarding.namePlaceholder")}
           maxLength={100}
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -30,11 +32,11 @@ export function BusinessForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="activity">Вид деятельности</Label>
+        <Label htmlFor="activity">{t("business.activity")}</Label>
         <Input
           id="activity"
           name="activity"
-          placeholder="Автомойка"
+          placeholder={t("onboarding.activityPlaceholder")}
           maxLength={100}
           value={activity}
           onChange={(e) => setActivity(e.target.value)}
@@ -50,7 +52,7 @@ export function BusinessForm() {
 
       <Button type="submit" disabled={isPending} className="w-full">
         {isPending && <Spinner />}
-        Создать бизнес
+        {t("onboarding.submit")}
       </Button>
     </form>
   )

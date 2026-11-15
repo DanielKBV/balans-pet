@@ -45,7 +45,7 @@ export function hasFilters(params: OperationsParams): boolean {
   return Boolean(params.q || params.from || params.to || params.type || params.category || params.author)
 }
 
-/** Name for «Кто внёс» and the employee filter. */
-export function memberName(member: { display_name: string | null; email: string | null }): string {
-  return member.display_name ?? member.email ?? "Без имени"
+/** Name for «Added by» and the employee filter; `noName` is the dictionary's «No name». */
+export function memberName(member: { display_name: string | null; email: string | null }, noName: string): string {
+  return member.display_name ?? member.email ?? noName
 }

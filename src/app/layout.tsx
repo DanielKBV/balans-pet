@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense, type ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import "./globals.css";
 import { OfflineBanner, ServiceWorkerRegister } from "@/components/service-worker";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -15,12 +18,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Balans",
-  description: "Онлайн-тетрадь доходов и расходов для небольшого бизнеса",
-  // iPhone: full screen from the home screen, name under the icon.
-  appleWebApp: { capable: true, title: "Balans", statusBarStyle: "default" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("meta");
+  return {
+    title: "Balans",
+    description: t("description"),
+    // iPhone: full screen from the home screen, name under the icon.
+    appleWebApp: { capable: true, title: "Balans", statusBarStyle: "default" },
+  };
+}
 
 // Matches --background in globals.css for each system theme.
 export const viewport: Viewport = {
@@ -30,10 +36,23 @@ export const viewport: Viewport = {
   ],
 };
 
+// The language comes from a cookie, known only at request time, and it sets <html lang>.
+// Suspense around the whole document tells Next to render every page per request.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    <Suspense>
+      <LocalizedDocument>{children}</LocalizedDocument>
+    </Suspense>
+  );
+}
+
+async function LocalizedDocument({ children }: { children: ReactNode }) {
+  const locale = await getLocale();
+  const t = await getTranslations("common");
+
+  return (
     <html
-      lang="ru"
+      lang={locale}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
@@ -42,14 +61,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           href="#main"
           className="sr-only rounded-lg bg-popover px-4 py-2 shadow-popover focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50"
         >
-          Перейти к содержимому
+          {t("skipToContent")}
         </a>
-        <ThemeProvider>
-          <OfflineBanner />
-          {children}
-          <Toaster />
-          <ServiceWorkerRegister />
-        </ThemeProvider>
+        <NextIntlClientProvider>
+          <ThemeProvider>
+            <OfflineBanner />
+            {children}
+            <Toaster />
+            <ServiceWorkerRegister />
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

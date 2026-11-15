@@ -1,10 +1,17 @@
+import type { Locale } from "@/i18n/config"
 import { todayInBishkek } from "@/lib/entry"
 
 /** A month is a «YYYY-MM» string, the same form as in the address: ?month=2026-10. */
 export type Month = string
 
-const LONG = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
-const SHORT = ["Янв", "Фев", "Март", "Апр", "Май", "Июнь", "Июль", "Авг", "Сен", "Окт", "Нояб", "Дек"]
+const LONG: Record<Locale, string[]> = {
+  ru: ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"],
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+}
+const SHORT: Record<Locale, string[]> = {
+  ru: ["Янв", "Фев", "Март", "Апр", "Май", "Июнь", "Июль", "Авг", "Сен", "Окт", "Нояб", "Дек"],
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+}
 
 export function currentMonth(): Month {
   return todayInBishkek().slice(0, 7)
@@ -35,17 +42,18 @@ export function lastDay(month: Month): string {
 
 const index = (month: Month) => Number(month.slice(5, 7)) - 1
 
-/** «2026-11» → «Ноябрь 2026». */
-export function monthTitle(month: Month): string {
-  return `${LONG[index(month)]} ${month.slice(0, 4)}`
+/** «2026-11» → «Ноябрь 2026» / «November 2026». */
+export function monthTitle(month: Month, locale: Locale): string {
+  return `${LONG[locale][index(month)]} ${month.slice(0, 4)}`
 }
 
-/** «2026-11» → «ноябрь», for «Выручка за ноябрь». */
-export function monthName(month: Month): string {
-  return LONG[index(month)].toLowerCase()
+/** «2026-11» → «ноябрь» / «November», for «Выручка за ноябрь» / «Revenue in November». */
+export function monthName(month: Month, locale: Locale): string {
+  const name = LONG[locale][index(month)]
+  return locale === "ru" ? name.toLowerCase() : name
 }
 
-/** «2026-11» → «Нояб», for chart axes. */
-export function monthShort(month: Month): string {
-  return SHORT[index(month)]
+/** «2026-11» → «Нояб» / «Nov», for chart axes. */
+export function monthShort(month: Month, locale: Locale): string {
+  return SHORT[locale][index(month)]
 }

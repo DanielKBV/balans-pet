@@ -1,6 +1,7 @@
 "use server"
 
 import { redirect } from "next/navigation"
+import { getTranslations } from "next-intl/server"
 
 import { authErrorMessage } from "@/lib/auth-errors"
 import { safeNext } from "@/lib/safe-next"
@@ -16,8 +17,9 @@ export async function authAction(_prev: AuthState, formData: FormData): Promise<
   const email = String(formData.get("email") ?? "").trim()
   const password = String(formData.get("password") ?? "")
 
-  if (!email) return { error: "Введите почту" }
-  if (mode !== "forgot" && !password) return { error: "Введите пароль" }
+  const t = await getTranslations()
+  if (!email) return { error: t("auth.emailRequired") }
+  if (mode !== "forgot" && !password) return { error: t("auth.passwordRequired") }
 
   const supabase = await createClient()
 
@@ -25,21 +27,19 @@ export async function authAction(_prev: AuthState, formData: FormData): Promise<
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${await siteOrigin()}/auth/callback?next=/reset-password`,
     })
-    if (error) return { error: authErrorMessage(error) }
-    return {
-      message: "Если такой аккаунт есть, мы отправили ссылку на почту. Откройте её в этом же браузере",
-    }
+    if (error) return { error: authErrorMessage(error, t) }
+    return { message: t("auth.resetSent") }
   }
 
   if (mode === "signup") {
     const { data, error } = await supabase.auth.signUp({ email, password })
-    if (error) return { error: authErrorMessage(error) }
+    if (error) return { error: authErrorMessage(error, t) }
     // Email confirmation is off in Supabase, so signUp returns a session.
     // If it is turned on, there is no session until the link is opened.
-    if (!data.session) return { message: "Проверьте почту: мы отправили ссылку для входа" }
+    if (!data.session) return { message: t("auth.checkEmail") }
   } else {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return { error: authErrorMessage(error) }
+    if (error) return { error: authErrorMessage(error, t) }
   }
 
   // Back to where the person came from, e.g. an invite link.

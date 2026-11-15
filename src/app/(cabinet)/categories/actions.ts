@@ -1,7 +1,9 @@
 "use server"
 
 import { refresh } from "next/cache"
+import { getTranslations } from "next-intl/server"
 
+import type { Translate } from "@/i18n/config"
 import { createClient } from "@/lib/supabase/server"
 
 export type CategoryState = { error?: string }
@@ -9,33 +11,35 @@ export type CategoryState = { error?: string }
 const MAX_LENGTH = 100
 const UNIQUE_VIOLATION = "23505"
 
-function readName(rawName: string): string | { error: string } {
+function readName(rawName: string, t: Translate): string | { error: string } {
   const name = rawName.trim()
-  if (!name) return { error: "Введите название категории" }
-  if (name.length > MAX_LENGTH) return { error: `Не больше ${MAX_LENGTH} символов` }
+  if (!name) return { error: t("categories.nameRequired") }
+  if (name.length > MAX_LENGTH) return { error: t("common.maxLength", { max: MAX_LENGTH }) }
   return name
 }
 
-function saveError(code: string | undefined): CategoryState {
-  if (code === UNIQUE_VIOLATION) return { error: "Такая категория уже есть" }
-  return { error: "Не удалось сохранить. Попробуйте ещё раз" }
+function saveError(code: string | undefined, t: Translate): CategoryState {
+  if (code === UNIQUE_VIOLATION) return { error: t("categories.duplicate") }
+  return { error: t("common.saveFailed") }
 }
 
 export async function addCategory(type: "income" | "expense", rawName: string): Promise<CategoryState> {
-  const name = readName(rawName)
+  const t = await getTranslations()
+  const name = readName(rawName, t)
   if (typeof name !== "string") return name
-  if (type !== "income" && type !== "expense") return { error: "Неизвестный тип категории" }
+  if (type !== "income" && type !== "expense") return { error: t("categories.unknownType") }
 
   const supabase = await createClient()
   const { error } = await supabase.from("categories").insert({ name, type })
-  if (error) return saveError(error.code)
+  if (error) return saveError(error.code, t)
 
   refresh()
   return {}
 }
 
 export async function renameCategory(id: string, rawName: string): Promise<CategoryState> {
-  const name = readName(rawName)
+  const t = await getTranslations()
+  const name = readName(rawName, t)
   if (typeof name !== "string") return name
 
   const supabase = await createClient()
@@ -45,22 +49,23 @@ export async function renameCategory(id: string, rawName: string): Promise<Categ
     .update({ name })
     .eq("id", id)
     .select("id")
-  if (error) return saveError(error.code)
-  if (!data.length) return { error: "Нет прав на изменение этой категории" }
+  if (error) return saveError(error.code, t)
+  if (!data.length) return { error: t("categories.noRights") }
 
   refresh()
   return {}
 }
 
 export async function setCategoryHidden(id: string, isHidden: boolean): Promise<CategoryState> {
+  const t = await getTranslations()
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("categories")
     .update({ is_hidden: isHidden })
     .eq("id", id)
     .select("id")
-  if (error) return saveError(error.code)
-  if (!data.length) return { error: "Нет прав на изменение этой категории" }
+  if (error) return saveError(error.code, t)
+  if (!data.length) return { error: t("categories.noRights") }
 
   refresh()
   return {}

@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Suspense, type ReactNode } from "react"
 import { connection } from "next/server"
 
+import { LocaleToggle } from "@/components/locale-toggle"
 import { Logo } from "@/components/logo"
 import { SignOutIconButton } from "@/components/sign-out-button"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -25,6 +26,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
             <Suspense>
               <SignOutButton />
             </Suspense>
+            <LocaleToggle />
             <ThemeToggle />
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -24,7 +25,8 @@ import { businessSchema, displayNameSchema, type BusinessValues } from "./schema
 const SUBMIT_CLASS = "w-full sm:w-auto sm:self-start"
 
 export function BusinessForm({ defaultValues }: { defaultValues: BusinessValues }) {
-  const form = useForm<BusinessValues>({ resolver: zodResolver(businessSchema), defaultValues })
+  const t = useTranslations()
+  const form = useForm<BusinessValues>({ resolver: zodResolver(businessSchema(t)), defaultValues })
   const { errors, isSubmitting } = form.formState
   // Saving is allowed only after a real change: surrounding spaces do not count.
   const [saved, setSaved] = useState(defaultValues)
@@ -39,13 +41,13 @@ export function BusinessForm({ defaultValues }: { defaultValues: BusinessValues 
     }
     setSaved(values)
     form.reset(values)
-    toast.success("Бизнес сохранён")
+    toast.success(t("settings.businessSaved"))
   })
 
   return (
     <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
       <Field data-invalid={!!errors.name}>
-        <FieldLabel htmlFor="business-name">Название</FieldLabel>
+        <FieldLabel htmlFor="business-name">{t("business.name")}</FieldLabel>
         <Input
           id="business-name"
           maxLength={100}
@@ -56,7 +58,7 @@ export function BusinessForm({ defaultValues }: { defaultValues: BusinessValues 
         <FieldError id="business-name-error" errors={[errors.name]} />
       </Field>
       <Field data-invalid={!!errors.activity}>
-        <FieldLabel htmlFor="activity">Вид деятельности</FieldLabel>
+        <FieldLabel htmlFor="activity">{t("business.activity")}</FieldLabel>
         <Input
           id="activity"
           maxLength={100}
@@ -68,7 +70,7 @@ export function BusinessForm({ defaultValues }: { defaultValues: BusinessValues 
       </Field>
       <Button type="submit" className={SUBMIT_CLASS} disabled={!isChanged || isSubmitting}>
         {isSubmitting && <Spinner />}
-        Сохранить
+        {t("common.save")}
       </Button>
     </form>
   )
@@ -82,6 +84,7 @@ export function ProfileForm({
   defaultName: string
   buttonVariant: "default" | "outline"
 }) {
+  const t = useTranslations()
   const [name, setName] = useState(defaultName)
   const [savedName, setSavedName] = useState(defaultName)
   const isChanged = name.trim() !== savedName
@@ -90,7 +93,7 @@ export function ProfileForm({
 
   function submit(event: React.FormEvent) {
     event.preventDefault()
-    const parsed = displayNameSchema.safeParse(name)
+    const parsed = displayNameSchema(t).safeParse(name)
     if (!parsed.success) {
       setError(parsed.error.issues[0].message)
       return
@@ -103,14 +106,14 @@ export function ProfileForm({
       }
       setSavedName(parsed.data)
       setName(parsed.data)
-      toast.success("Имя сохранено")
+      toast.success(t("settings.displayNameSaved"))
     })
   }
 
   return (
     <form noValidate onSubmit={submit} className="flex flex-col gap-4">
       <Field data-invalid={!!error}>
-        <FieldLabel htmlFor="display-name">Имя</FieldLabel>
+        <FieldLabel htmlFor="display-name">{t("settings.displayName")}</FieldLabel>
         <Input
           id="display-name"
           maxLength={100}
@@ -127,13 +130,13 @@ export function ProfileForm({
           <FieldError id="display-name-error">{error}</FieldError>
         ) : (
           <p id="display-name-hint" className="text-small text-muted-foreground">
-            Его видит владелец в списке команды и в колонке «Кто внёс»
+            {t("settings.displayNameHint")}
           </p>
         )}
       </Field>
       <Button type="submit" variant={buttonVariant} className={SUBMIT_CLASS} disabled={!isChanged || isPending}>
         {isPending && <Spinner />}
-        Сохранить
+        {t("common.save")}
       </Button>
     </form>
   )
@@ -141,6 +144,7 @@ export function ProfileForm({
 
 /** The delete button unlocks only when the exact business name is typed. */
 export function DeleteBusiness({ businessName }: { businessName: string }) {
+  const t = useTranslations()
   const [isOpen, setIsOpen] = useState(false)
   const [typed, setTyped] = useState("")
   const [isPending, startTransition] = useTransition()
@@ -157,7 +161,7 @@ export function DeleteBusiness({ businessName }: { businessName: string }) {
   return (
     <>
       <Button variant="destructive" className={SUBMIT_CLASS} onClick={() => setIsOpen(true)}>
-        Удалить бизнес
+        {t("settings.deleteButton")}
       </Button>
       <Dialog
         open={isOpen}
@@ -168,14 +172,11 @@ export function DeleteBusiness({ businessName }: { businessName: string }) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Удалить бизнес?</DialogTitle>
-            <DialogDescription>
-              Удалятся все записи, категории и команда «{businessName}». Сотрудники потеряют доступ. Отменить
-              нельзя.
-            </DialogDescription>
+            <DialogTitle>{t("settings.deleteDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("settings.deleteDialogText", { business: businessName })}</DialogDescription>
           </DialogHeader>
           <Field>
-            <FieldLabel htmlFor="confirm-name">Введите название бизнеса, чтобы подтвердить</FieldLabel>
+            <FieldLabel htmlFor="confirm-name">{t("settings.confirmLabel")}</FieldLabel>
             <Input
               id="confirm-name"
               autoComplete="off"
@@ -185,10 +186,10 @@ export function DeleteBusiness({ businessName }: { businessName: string }) {
             />
           </Field>
           <DialogFooter>
-            <DialogClose render={<Button variant="ghost" />}>Отмена</DialogClose>
+            <DialogClose render={<Button variant="ghost" />}>{t("common.cancel")}</DialogClose>
             <Button variant="destructive" disabled={!matches || isPending} onClick={remove}>
               {isPending && <Spinner />}
-              Удалить
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -3,6 +3,7 @@
 // BASE_URL=http://localhost:3000 uses an already running server;
 // otherwise a temporary `next dev` is started and stopped afterwards.
 // --auth signs in first with TEST_EMAIL and TEST_PASSWORD from .env.local (cabinet pages).
+// --lang=en,ru shoots each language (the `lang` cookie); the file name gets the language. Default: en,ru.
 import { spawn, execSync } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
@@ -16,7 +17,9 @@ const OUT_DIR = ".screenshots";
 
 const args = process.argv.slice(2);
 const useAuth = args.includes("--auth");
-const pathArgs = args.filter((arg) => arg !== "--auth");
+const langArg = args.find((arg) => arg.startsWith("--lang="));
+const LANGS = langArg ? langArg.slice("--lang=".length).split(",") : ["en", "ru"];
+const pathArgs = args.filter((arg) => !arg.startsWith("--"));
 const paths = pathArgs.length ? pathArgs : ["/"];
 let baseUrl = process.env.BASE_URL;
 let server;
@@ -76,8 +79,9 @@ try {
 
   for (const path of paths) {
     const slug = path === "/" ? "home" : path.replace(/^\/|\/$/g, "").replace(/\//g, "_");
-    for (const theme of THEMES) for (const width of WIDTHS) {
+    for (const lang of LANGS) for (const theme of THEMES) for (const width of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height: HEIGHT }, colorScheme: theme, storageState });
+      await page.context().addCookies([{ name: "lang", value: lang, url: baseUrl }]);
       await page.goto(baseUrl + path, { waitUntil: "networkidle" });
       // Charts measure their container and animate after load; give them a moment.
       await page.waitForTimeout(1000);
@@ -85,14 +89,14 @@ try {
         scrollWidth: document.documentElement.scrollWidth,
         innerWidth: window.innerWidth,
       }));
-      const file = `${OUT_DIR}/${slug}-${theme}-${width}.png`;
+      const file = `${OUT_DIR}/${slug}-${lang}-${theme}-${width}.png`;
       await page.screenshot({ path: file, fullPage: true });
       await page.close();
 
       const ok = scrollWidth <= innerWidth;
-      if (!ok) failures.push(`${path} @ ${width}px ${theme}`);
+      if (!ok) failures.push(`${path} @ ${width}px ${lang} ${theme}`);
       console.log(
-        `${ok ? "OK  " : "FAIL"} ${path} @ ${width}px ${theme.padEnd(5)}  ` +
+        `${ok ? "OK  " : "FAIL"} ${path} @ ${width}px ${lang} ${theme.padEnd(5)}  ` +
           (ok ? "no horizontal scroll" : `horizontal scroll: ${scrollWidth}px > ${innerWidth}px`) +
           `  -> ${file}`,
       );

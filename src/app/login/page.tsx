@@ -1,11 +1,13 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
+import { getTranslations } from "next-intl/server"
 
 import { AuthShell } from "./auth-shell"
 import { LoginForm } from "./login-form"
 
-export const metadata: Metadata = {
-  title: "Вход · Balans",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("auth")
+  return { title: t("metaTitle") }
 }
 
 export default function LoginPage() {

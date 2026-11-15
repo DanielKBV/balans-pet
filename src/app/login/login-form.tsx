@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 import { GoogleIcon } from "@/components/google-icon"
 import { Button } from "@/components/ui/button"
@@ -12,11 +13,11 @@ import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { authAction, signInWithGoogle, type AuthMode, type AuthState } from "./actions"
 
-const copy: Record<AuthMode, { title: string; submit: string }> = {
-  signin: { title: "Вход в Balans", submit: "Войти" },
-  signup: { title: "Регистрация", submit: "Зарегистрироваться" },
-  forgot: { title: "Восстановление пароля", submit: "Отправить ссылку" },
-}
+const copy = {
+  signin: { title: "auth.titleSignin", submit: "common.signIn" },
+  signup: { title: "auth.titleSignup", submit: "common.signUp" },
+  forgot: { title: "auth.titleForgot", submit: "auth.submitForgot" },
+} as const satisfies Record<AuthMode, { title: string; submit: string }>
 
 const linkClass =
   "rounded-sm text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -33,15 +34,16 @@ export function LoginForm() {
 }
 
 function LoginModes({ urlError, urlMode, next }: { urlError: string | null; urlMode: string | null; next: string }) {
+  const t = useTranslations("auth")
   const linkExpired = urlError === "link"
   const [mode, setMode] = useState<AuthMode>(linkExpired ? "forgot" : urlMode === "signup" ? "signup" : "signin")
   // Controlled: React resets uncontrolled fields after a form action, and the
   // email should survive both a failed attempt and a mode switch.
   const [email, setEmail] = useState("")
   const initial: AuthState = linkExpired && mode === "forgot"
-    ? { error: "Ссылка устарела или уже использована. Запросите новую" }
+    ? { error: t("linkExpired") }
     : urlError === "google" && mode === "signin"
-      ? { error: "Не удалось войти через Google. Попробуйте ещё раз" }
+      ? { error: t("googleFailed") }
       : {}
 
   // key: switching mode starts with a clean form state
@@ -65,26 +67,27 @@ function AuthForm({
   setEmail: (email: string) => void
   next: string
 }) {
+  const t = useTranslations()
   const [state, formAction, isPending] = useActionState<AuthState, FormData>(authAction, initial)
   const { title, submit } = copy[mode]
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-title">{title}</h1>
+      <h1 className="text-title">{t(title)}</h1>
 
       <form action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name="mode" value={mode} />
         <input type="hidden" name="next" value={next} />
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="email">Почта</Label>
+          <Label htmlFor="email">{t("auth.email")}</Label>
           <Input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
             spellCheck={false}
-            placeholder="name@mail.kg"
+            placeholder={t("auth.emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -94,10 +97,10 @@ function AuthForm({
         {mode !== "forgot" && (
           <div className="flex flex-col gap-2">
             <div className="flex items-baseline justify-between gap-2">
-              <Label htmlFor="password">Пароль</Label>
+              <Label htmlFor="password">{t("auth.password")}</Label>
               {mode === "signin" && (
                 <button type="button" className={`${linkClass} text-small`} onClick={() => setMode("forgot")}>
-                  Забыли пароль?
+                  {t("auth.forgotLink")}
                 </button>
               )}
             </div>
@@ -109,7 +112,7 @@ function AuthForm({
               required
             />
             {mode === "signup" && (
-              <p className="text-small text-muted-foreground">Не меньше 6 символов</p>
+              <p className="text-small text-muted-foreground">{t("auth.passwordHint")}</p>
             )}
           </div>
         )}
@@ -127,7 +130,7 @@ function AuthForm({
 
         <Button type="submit" disabled={isPending} className="w-full">
           {isPending && <Spinner />}
-          {submit}
+          {t(submit)}
         </Button>
       </form>
 
@@ -135,7 +138,7 @@ function AuthForm({
         <>
           <div className="flex items-center gap-3 text-small text-muted-foreground">
             <span aria-hidden className="h-px flex-1 bg-border" />
-            или
+            {t("auth.or")}
             <span aria-hidden className="h-px flex-1 bg-border" />
           </div>
           <form action={signInWithGoogle}>
@@ -148,16 +151,16 @@ function AuthForm({
       <p className="text-small text-muted-foreground">
         {mode === "signin" ? (
           <>
-            Нет аккаунта?{" "}
+            {t("auth.noAccount")}{" "}
             <button type="button" className={linkClass} onClick={() => setMode("signup")}>
-              Зарегистрироваться
+              {t("common.signUp")}
             </button>
           </>
         ) : (
           <>
-            {mode === "signup" ? "Уже есть аккаунт? " : "Вспомнили пароль? "}
+            {mode === "signup" ? t("auth.haveAccount") : t("auth.remembered")}{" "}
             <button type="button" className={linkClass} onClick={() => setMode("signin")}>
-              Войти
+              {t("common.signIn")}
             </button>
           </>
         )}
@@ -168,10 +171,11 @@ function AuthForm({
 
 function GoogleButton() {
   const { pending } = useFormStatus()
+  const t = useTranslations("auth")
   return (
     <Button type="submit" variant="outline" disabled={pending} className="w-full">
       {pending ? <Spinner /> : <GoogleIcon className="size-5" />}
-      Войти через Google
+      {t("google")}
     </Button>
   )
 }

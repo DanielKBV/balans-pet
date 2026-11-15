@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -21,6 +22,7 @@ export function MonthSwitcher({
   nextHref: string | null
 }) {
   const router = useRouter()
+  const t = useTranslations("dashboard")
   const [isPending, startTransition] = useTransition()
   const [pressed, setPressed] = useState<"prev" | "next">()
 
@@ -34,7 +36,7 @@ export function MonthSwitcher({
       <Button
         variant="outline"
         size="icon"
-        aria-label="Предыдущий месяц"
+        aria-label={t("prevMonth")}
         disabled={isPending}
         onClick={() => go("prev", prevHref)}
       >
@@ -46,7 +48,7 @@ export function MonthSwitcher({
       <Button
         variant="outline"
         size="icon"
-        aria-label="Следующий месяц"
+        aria-label={t("nextMonth")}
         disabled={isPending || !nextHref}
         onClick={() => nextHref && go("next", nextHref)}
       >

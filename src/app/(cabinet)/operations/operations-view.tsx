@@ -27,6 +27,7 @@ import {
   SearchXIcon,
   Trash2Icon,
 } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { DatePicker } from "@/components/date-picker"
@@ -72,7 +73,7 @@ export type EntryRow = {
   comment: string | null
   category_id: string
   category: { name: string } | null
-  /** Who added it: a team member's name or «Бывший сотрудник». Empty for an employee. */
+  /** Who added it: a team member's name or «Former member». Empty for an employee. */
   author: string
   /** The owner changes any entry; an employee their own for 24 hours (the server decides). */
   editable: boolean
@@ -81,7 +82,18 @@ export type EntryRow = {
 export type FilterCategory = { id: string; name: string; type: EntryType; is_hidden: boolean }
 export type FilterMember = { user_id: string; display_name: string | null; email: string | null }
 
-const TYPE_LABEL = { income: "Доход", expense: "Расход" } as const
+/** Column headers are keys in the `operations` dictionary section. */
+type ColumnHeader = "columnDate" | "columnType" | "columnCategory" | "columnComment" | "columnAuthor" | "columnAmount"
+
+function DateCell({ date }: { date: string }) {
+  const locale = useLocale()
+  return <span className="whitespace-nowrap tabular-nums">{formatDate(date, locale)}</span>
+}
+
+function TypeBadge({ type }: { type: EntryType }) {
+  const t = useTranslations("common")
+  return <Badge variant={type}>{t(type)}</Badge>
+}
 
 // TanStack only keeps the state; with the manual flags the database does the filtering, sorting and paging.
 const features = tableFeatures({ columnFilteringFeature, rowSortingFeature, rowPaginationFeature })
@@ -89,25 +101,25 @@ const helper = createColumnHelper<typeof features, EntryRow>()
 const columns = helper.columns([
   helper.accessor("entry_date", {
     id: "date",
-    header: "Дата",
-    cell: (info) => <span className="whitespace-nowrap tabular-nums">{formatDate(info.getValue())}</span>,
+    header: "columnDate" satisfies ColumnHeader,
+    cell: (info) => <DateCell date={info.getValue()} />,
   }),
   helper.accessor("type", {
     id: "type",
-    header: "Тип",
+    header: "columnType" satisfies ColumnHeader,
     enableSorting: false,
-    cell: (info) => <Badge variant={info.getValue()}>{TYPE_LABEL[info.getValue()]}</Badge>,
+    cell: (info) => <TypeBadge type={info.getValue()} />,
   }),
   helper.accessor("category_id", {
     id: "category",
-    header: "Категория",
+    header: "columnCategory" satisfies ColumnHeader,
     enableSorting: false,
     cell: (info) => (
       <>
         <span className="block max-w-64 truncate" title={info.row.original.category?.name}>
           {info.row.original.category?.name}
         </span>
-        {/* Below 1280px there is no room for «Кто внёс», so the name goes under the category. */}
+        {/* Below 1280px there is no room for «Added by», so the name goes under the category. */}
         {info.row.original.author && (
           <span className="block max-w-48 truncate text-small text-muted-foreground xl:hidden">
             {info.row.original.author}
@@ -118,13 +130,13 @@ const columns = helper.columns([
   }),
   helper.accessor("comment", {
     id: "comment",
-    header: "Комментарий",
+    header: "columnComment" satisfies ColumnHeader,
     enableSorting: false,
     cell: (info) => <span className="line-clamp-2 break-words text-muted-foreground">{info.getValue() || "—"}</span>,
   }),
   helper.accessor("author", {
     id: "author",
-    header: "Кто внёс",
+    header: "columnAuthor" satisfies ColumnHeader,
     enableSorting: false,
     cell: (info) => (
       <span className="block max-w-48 truncate" title={info.getValue()}>
@@ -134,11 +146,11 @@ const columns = helper.columns([
   }),
   helper.accessor("amount", {
     id: "amount",
-    header: "Сумма",
+    header: "columnAmount" satisfies ColumnHeader,
     cell: (info) => <Money amount={info.getValue()} type={info.row.original.type} />,
   }),
 ])
-// An employee sees only their own entries, so «Кто внёс» would always be them.
+// An employee sees only their own entries, so «Added by» would always be them.
 const employeeColumns = columns.filter((column) => column.id !== "author")
 
 /** URL params ↔ TanStack column filters: the address stays the single source of truth. */
@@ -183,6 +195,8 @@ export function OperationsView({
   today: string
 }) {
   const router = useRouter()
+  const t = useTranslations("operations")
+  const tEntries = useTranslations("entries")
   const [isPending, startTransition] = useTransition()
 
   // The old rows stay on screen (dimmed) until the new page arrives.
@@ -250,13 +264,13 @@ export function OperationsView({
       >
         <div className={cn("relative col-span-2", isOwner ? "md:col-span-3 2xl:col-span-1" : "md:col-span-4 xl:col-span-1")}>
           <Label htmlFor="search" className="sr-only">
-            Поиск по комментарию
+            {t("search")}
           </Label>
           <SearchIcon aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="search"
             type="search"
-            placeholder="Поиск по комментарию"
+            placeholder={t("search")}
             className="pl-10"
             value={query}
             onChange={(e) => changeQuery(e.target.value)}
@@ -265,8 +279,8 @@ export function OperationsView({
         {isOwner && (
           <AuthorFilter value={params.author} members={members} onChange={(author) => setFilter("author", author)} />
         )}
-        <DateFilter id="from" label="С" value={params.from} max={params.to || today} onChange={(from) => setFilter("date", [from, params.to])} />
-        <DateFilter id="to" label="По" value={params.to} min={params.from} max={today} onChange={(to) => setFilter("date", [params.from, to])} />
+        <DateFilter id="from" label={t("from")} value={params.from} max={params.to || today} onChange={(from) => setFilter("date", [from, params.to])} />
+        <DateFilter id="to" label={t("to")} value={params.to} min={params.from} max={today} onChange={(to) => setFilter("date", [params.from, to])} />
         <TypeFilter value={params.type} onChange={(type) => table.setColumnFilters((old) => [
           ...old.filter((filter) => filter.id !== "type" && filter.id !== "category"),
           { id: "type", value: type },
@@ -279,12 +293,12 @@ export function OperationsView({
         />
         {filtered && (
           <Button variant="ghost" className="col-span-2 md:col-span-1 xl:col-span-1" onClick={resetFilters}>
-            Сбросить
+            {t("reset")}
           </Button>
         )}
       </div>
 
-      {/* While the next page loads, the old rows stay dimmed under a «Загрузка…» badge. */}
+      {/* While the next page loads, the old rows stay dimmed under a «Loading…» badge. */}
       <div
         aria-busy={isPending}
         className={cn(
@@ -296,7 +310,7 @@ export function OperationsView({
           <div role="status" className="pointer-events-none absolute inset-x-0 top-6 z-10 flex justify-center">
             <span className="flex items-center gap-2 rounded-full border border-border bg-popover px-4 py-2 text-small font-medium shadow-popover">
               <Spinner />
-              Загрузка…
+              {t("loading")}
             </span>
           </div>
         )}
@@ -306,19 +320,19 @@ export function OperationsView({
               <StateMessage
                 variant="empty"
                 icon={SearchXIcon}
-                title="Ничего не найдено"
-                description="Попробуйте изменить фильтры."
-                action={<Button variant="outline" onClick={resetFilters}>Сбросить фильтры</Button>}
+                title={t("nothingFound")}
+                description={t("tryFilters")}
+                action={<Button variant="outline" onClick={resetFilters}>{t("resetFilters")}</Button>}
               />
             ) : (
               <StateMessage
                 variant="empty"
-                title="Записей пока нет"
-                description="Добавьте первую: выручку или расход за сегодня."
+                title={tEntries("emptyTitle")}
+                description={tEntries("emptyText")}
                 action={
                   <Button render={<Link href="/add" />} nativeButton={false}>
                     <PlusIcon />
-                    Добавить запись
+                    {tEntries("addTitle")}
                   </Button>
                 }
               />
@@ -346,19 +360,19 @@ export function OperationsView({
                           >
                             {header.column.getCanSort() ? (
                               <SortButton
-                                label={String(header.column.columnDef.header)}
+                                label={t(header.column.columnDef.header as ColumnHeader)}
                                 sorted={sorted}
                                 onClick={header.column.getToggleSortingHandler()}
                                 alignEnd={header.column.id === "amount"}
                               />
                             ) : (
-                              <table.FlexRender header={header} />
+                              t(header.column.columnDef.header as ColumnHeader)
                             )}
                           </TableHead>
                         )
                       })}
                       <TableHead className="w-24">
-                        <span className="sr-only">Действия</span>
+                        <span className="sr-only">{t("columnActions")}</span>
                       </TableHead>
                     </TableRow>
                   ))}
@@ -398,7 +412,7 @@ export function OperationsView({
                         {entry.category?.name}
                       </span>
                       <p className="line-clamp-2 text-small break-words text-muted-foreground">
-                        <span className="tabular-nums">{formatDate(entry.entry_date)}</span>
+                        <DateCell date={entry.entry_date} />
                         {isOwner && <span className="break-words"> · {entry.author}</span>}
                         {entry.comment && <span className="break-words"> · {entry.comment}</span>}
                       </p>
@@ -415,25 +429,25 @@ export function OperationsView({
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-small text-muted-foreground tabular-nums">
-                {firstRow}–{firstRow + rows.length - 1} из {total}
+                {t("range", { from: firstRow, to: firstRow + rows.length - 1, total })}
               </p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon"
-                  aria-label="Предыдущая страница"
+                  aria-label={t("prevPage")}
                   disabled={!table.getCanPreviousPage()}
                   onClick={() => table.previousPage()}
                 >
                   <ChevronLeftIcon className="size-5" />
                 </Button>
                 <span className="min-w-24 text-center text-small tabular-nums">
-                  Стр. {params.page} из {table.getPageCount()}
+                  {t("page", { page: params.page, pages: table.getPageCount() })}
                 </span>
                 <Button
                   variant="outline"
                   size="icon"
-                  aria-label="Следующая страница"
+                  aria-label={t("nextPage")}
                   disabled={!table.getCanNextPage()}
                   onClick={() => table.nextPage()}
                 >
@@ -490,30 +504,31 @@ function DateFilter({
   max: string
   onChange: (value: string) => void
 }) {
+  const t = useTranslations("operations")
   return (
     <div className="flex flex-col gap-1">
       <Label htmlFor={id} className="text-small text-muted-foreground">
         {label}
       </Label>
-      <DatePicker id={id} value={value} min={min || undefined} max={max} onChange={onChange} placeholder="Любая" clearable />
+      <DatePicker id={id} value={value} min={min || undefined} max={max} onChange={onChange} placeholder={t("anyDate")} clearable />
     </div>
   )
 }
 
-const TYPE_ITEMS = [
-  { value: null, label: "Все типы" },
-  { value: "income", label: "Доходы" },
-  { value: "expense", label: "Расходы" },
-]
-
 function TypeFilter({ value, onChange }: { value: OperationsParams["type"]; onChange: (value: string) => void }) {
+  const t = useTranslations()
+  const items = [
+    { value: null, label: t("operations.allTypes") },
+    { value: "income", label: t("common.incomes") },
+    { value: "expense", label: t("common.expenses") },
+  ]
   return (
-    <Select items={TYPE_ITEMS} value={value || null} onValueChange={(next) => onChange((next as string | null) ?? "")}>
-      <SelectTrigger aria-label="Тип" className="w-full">
+    <Select items={items} value={value || null} onValueChange={(next) => onChange((next as string | null) ?? "")}>
+      <SelectTrigger aria-label={t("operations.columnType")} className="w-full">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {TYPE_ITEMS.map((item) => (
+        {items.map((item) => (
           <SelectItem key={item.label} value={item.value}>
             {item.label}
           </SelectItem>
@@ -534,23 +549,28 @@ function CategoryFilter({
   categories: FilterCategory[]
   onChange: (value: string) => void
 }) {
-  const label = (category: FilterCategory) => (category.is_hidden ? `${category.name} (скрыта)` : category.name)
-  const items = [{ value: null, label: "Все категории" }, ...categories.map((c) => ({ value: c.id, label: label(c) }))]
+  const t = useTranslations()
+  const label = (category: FilterCategory) =>
+    category.is_hidden ? t("operations.hiddenCategory", { name: category.name }) : category.name
+  const items = [
+    { value: null, label: t("operations.allCategories") },
+    ...categories.map((c) => ({ value: c.id, label: label(c) })),
+  ]
   const groups = (["income", "expense"] as const)
     .filter((groupType) => !type || type === groupType)
     .map((groupType) => ({
       type: groupType,
-      title: groupType === "income" ? "Доходы" : "Расходы",
+      title: groupType === "income" ? t("common.incomes") : t("common.expenses"),
       categories: categories.filter((category) => category.type === groupType),
     }))
 
   return (
     <Select items={items} value={value || null} onValueChange={(next) => onChange((next as string | null) ?? "")}>
-      <SelectTrigger aria-label="Категория" className="w-full min-w-0">
+      <SelectTrigger aria-label={t("operations.columnCategory")} className="w-full min-w-0">
         <SelectValue className="truncate" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={null}>Все категории</SelectItem>
+        <SelectItem value={null}>{t("operations.allCategories")}</SelectItem>
         {groups.map((group) => (
           <SelectGroup key={group.type} className="border-t border-border first-of-type:border-t-0">
             <SelectLabel>{group.title}</SelectLabel>
@@ -575,11 +595,15 @@ function AuthorFilter({
   members: FilterMember[]
   onChange: (value: string) => void
 }) {
-  const items = [{ value: null, label: "Все сотрудники" }, ...members.map((m) => ({ value: m.user_id, label: memberName(m) }))]
+  const t = useTranslations()
+  const items = [
+    { value: null, label: t("operations.allMembers") },
+    ...members.map((m) => ({ value: m.user_id, label: memberName(m, t("common.noName")) })),
+  ]
 
   return (
     <Select items={items} value={value || null} onValueChange={(next) => onChange((next as string | null) ?? "")}>
-      <SelectTrigger aria-label="Кто внёс" className="col-span-2 w-full min-w-0 md:col-span-1">
+      <SelectTrigger aria-label={t("operations.columnAuthor")} className="col-span-2 w-full min-w-0 md:col-span-1">
         <SelectValue className="truncate" />
       </SelectTrigger>
       <SelectContent>
@@ -609,7 +633,10 @@ function RowActions({
   // A new key on every open remounts the form, so it starts from the saved entry.
   const [editKey, setEditKey] = useState(0)
   const [isPending, startTransition] = useTransition()
-  const name = entry.category?.name ?? "запись"
+  const locale = useLocale()
+  const t = useTranslations()
+  const name = entry.category?.name ?? t("operations.entryFallback")
+  const date = formatDate(entry.entry_date, locale)
   // A category hidden after the entry was made stays available for this entry only.
   const formCategories = categories.filter((category) => !category.is_hidden || category.id === entry.category_id)
 
@@ -621,7 +648,7 @@ function RowActions({
         return
       }
       setIsDeleting(false)
-      toast.success("Запись удалена")
+      toast.success(t("operations.deleted"))
     })
   }
 
@@ -633,8 +660,8 @@ function RowActions({
       <Button
         variant="ghost"
         size="icon"
-        aria-label={`Изменить «${name}» от ${formatDate(entry.entry_date)}`}
-        title="Изменить"
+        aria-label={t("operations.editAria", { name, date })}
+        title={t("operations.edit")}
         onClick={() => {
           setEditKey((key) => key + 1)
           setIsEditing(true)
@@ -645,8 +672,8 @@ function RowActions({
       <Button
         variant="ghost"
         size="icon"
-        aria-label={`Удалить «${name}» от ${formatDate(entry.entry_date)}`}
-        title="Удалить"
+        aria-label={t("operations.deleteAria", { name, date })}
+        title={t("common.delete")}
         onClick={() => setIsDeleting(true)}
       >
         <Trash2Icon className="size-5 text-muted-foreground" />
@@ -655,7 +682,7 @@ function RowActions({
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Изменить запись</DialogTitle>
+            <DialogTitle>{t("operations.editTitle")}</DialogTitle>
           </DialogHeader>
           <EntryForm
             key={editKey}
@@ -665,7 +692,7 @@ function RowActions({
             save={(values) => updateEntry(entry.id, values)}
             onSaved={() => setIsEditing(false)}
             onCancel={() => setIsEditing(false)}
-            successMessage="Запись сохранена"
+            successMessage={t("operations.saved")}
             defaultValues={{
               type: entry.type,
               amount: String(entry.amount),
@@ -680,16 +707,16 @@ function RowActions({
       <Dialog open={isDeleting} onOpenChange={setIsDeleting}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Удалить запись?</DialogTitle>
+            <DialogTitle>{t("operations.deleteTitle")}</DialogTitle>
             <DialogDescription>
-              {formatDate(entry.entry_date)} · {name} · {formatSom(entry.amount)}. Вернуть её будет нельзя.
+              {t("operations.deleteText", { date, name, amount: formatSom(entry.amount, locale) })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose render={<Button variant="ghost" />}>Отмена</DialogClose>
+            <DialogClose render={<Button variant="ghost" />}>{t("common.cancel")}</DialogClose>
             <Button variant="destructive" disabled={isPending} onClick={confirmDelete}>
               {isPending && <Spinner />}
-              Удалить
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
