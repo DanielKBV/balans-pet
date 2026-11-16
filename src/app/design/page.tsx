@@ -116,7 +116,7 @@ const colorGroups: { title: string; tokens: [string, string][] }[] = [
 ]
 
 const typeScale = [
-  { cls: "text-hero", meta: "32 → 40 → 48 px · 600 · только лендинг", sample: "Прибыль считается сама" },
+  { cls: "text-hero", meta: "36 → 48 → 64 px (с 1280) · 600 · только лендинг", sample: "Прибыль считается сама" },
   { cls: "text-display", meta: "28 → 36 px · 600 · цифры", sample: formatSom(1234567, "ru") },
   { cls: "text-title", meta: "24 → 28 px · 600", sample: "Операции за октябрь" },
   { cls: "text-heading", meta: "20 px · 600", sample: "Расходы по категориям" },
@@ -244,6 +244,18 @@ export default function DesignPage() {
             <div className="flex flex-col gap-2">
               <div className="h-20 rounded-2xl border border-border bg-popover shadow-dialog" />
               <span className="text-small text-muted-foreground">shadow-dialog · окно</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="h-20 rounded-2xl border border-border bg-background shadow-showcase" />
+              <span className="text-small text-muted-foreground">shadow-showcase · лендинг, окно кабинета</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="h-20 rounded-xl border border-border bg-card shadow-highlight" />
+              <span className="text-small text-muted-foreground">shadow-highlight · лендинг, карточки</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="h-20 rounded-xl border border-border bg-glow" />
+              <span className="text-small text-muted-foreground">bg-glow · лендинг, свет за сценой</span>
             </div>
           </div>
         </Section>

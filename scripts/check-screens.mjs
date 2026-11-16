@@ -80,7 +80,14 @@ try {
   for (const path of paths) {
     const slug = path === "/" ? "home" : path.replace(/^\/|\/$/g, "").replace(/\//g, "_");
     for (const lang of LANGS) for (const theme of THEMES) for (const width of WIDTHS) {
-      const page = await browser.newPage({ viewport: { width, height: HEIGHT }, colorScheme: theme, storageState });
+      // Reduced motion: scroll-linked reveals on the landing would leave everything below the first screen
+      // transparent in a full-page shot. With it the page is shown in its final, static state.
+      const page = await browser.newPage({
+        viewport: { width, height: HEIGHT },
+        colorScheme: theme,
+        reducedMotion: "reduce",
+        storageState,
+      });
       await page.context().addCookies([{ name: "lang", value: lang, url: baseUrl }]);
       await page.goto(baseUrl + path, { waitUntil: "networkidle" });
       // Charts measure their container and animate after load; give them a moment.

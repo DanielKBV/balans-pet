@@ -5,7 +5,6 @@ import { connection } from "next/server"
 import { LocaleToggle } from "@/components/locale-toggle"
 import { Logo } from "@/components/logo"
 import { SignOutIconButton } from "@/components/sign-out-button"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Card } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 
@@ -27,7 +26,6 @@ export function AuthShell({ children }: { children: ReactNode }) {
               <SignOutButton />
             </Suspense>
             <LocaleToggle />
-            <ThemeToggle />
           </div>
         </div>
       </header>

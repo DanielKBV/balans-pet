@@ -39,7 +39,18 @@ export function navItemsFor(isOwner: boolean) {
 }
 
 /** Left menu, 240px. The caller decides visibility (shown from lg). */
-export function Sidebar({ active, isOwner = true, className }: { active?: string; isOwner?: boolean; className?: string }) {
+export function Sidebar({
+  active,
+  isOwner = true,
+  prefetch,
+  className,
+}: {
+  active?: string
+  isOwner?: boolean
+  /** false on the landing preview: its links are inert and must not preload cabinet pages. */
+  prefetch?: false
+  className?: string
+}) {
   const t = useTranslations("nav")
   return (
     <aside
@@ -58,6 +69,7 @@ export function Sidebar({ active, isOwner = true, className }: { active?: string
             <Link
               key={href}
               href={href}
+              prefetch={prefetch}
               aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex min-h-row items-center gap-3 rounded-lg px-3 outline-none hover:bg-sidebar-accent focus-visible:ring-3 focus-visible:ring-ring/50",

@@ -5,7 +5,6 @@ import { getTranslations } from "next-intl/server"
 
 import { LocaleToggle } from "@/components/locale-toggle"
 import { Logo } from "@/components/logo"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("privacy")
@@ -39,7 +38,6 @@ export default function PrivacyPage() {
           </Link>
           <div className="flex items-center gap-1">
             <LocaleToggle />
-            <ThemeToggle />
           </div>
         </div>
       </header>

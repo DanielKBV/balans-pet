@@ -88,6 +88,9 @@
   /* Elevation: only floating layers get a shadow */
   --shadow-popover: var(--elevation-popover);
   --shadow-dialog: var(--elevation-dialog);
+  /* Landing only (DESIGN.md §13): the cabinet window and the light edge on feature cards. */
+  --shadow-showcase: var(--elevation-showcase);
+  --shadow-highlight: var(--elevation-highlight);
 
   /* Motion */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -167,6 +170,8 @@
 
   --elevation-popover: 0 4px 12px -2px oklch(0.21 0.02 264 / 0.08), 0 1px 2px oklch(0.21 0.02 264 / 0.06);
   --elevation-dialog: 0 16px 40px -8px oklch(0.21 0.02 264 / 0.18);
+  --elevation-showcase: 0 40px 80px -24px oklch(0.21 0.02 264 / 0.25);
+  --elevation-highlight: inset 0 1px 0 oklch(1 0 0 / 0.6);
 }
 
 .dark {
@@ -230,22 +235,25 @@
 
   --elevation-popover: 0 4px 12px -2px oklch(0 0 0 / 0.5);
   --elevation-dialog: 0 16px 40px -8px oklch(0 0 0 / 0.6);
+  --elevation-showcase: 0 40px 100px -20px oklch(0 0 0 / 0.7);
+  --elevation-highlight: inset 0 1px 0 oklch(1 0 0 / 0.07);
 }
 
 /* Type scale. Body text is 16px everywhere; only chart axis labels go below 14px. */
 /* Landing headline only; product pages stop at text-title. */
 @utility text-hero {
-  font-size: 2rem; /* 32px phone */
-  line-height: 1.15;
+  font-size: 2.25rem; /* 36px phone */
+  line-height: 1.1;
   font-weight: 600;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   @media (width >= 48rem) {
-    font-size: 2.5rem; /* 40px */
-    line-height: 1.1;
-  }
-  @media (width >= 64rem) {
     font-size: 3rem; /* 48px */
     line-height: 1.05;
+  }
+  /* 64px only from 1280: in the 1024 two-column hero it broke the headline into five lines. */
+  @media (width >= 80rem) {
+    font-size: 4rem; /* 64px */
+    line-height: 1.02;
   }
 }
 
@@ -326,6 +334,78 @@
     padding-inline: --spacing(8);
   }
 }
+
+/* ---- Landing marketing layer (DESIGN.md §13). Not for cabinet pages. ---- */
+
+/* The one soft indigo light behind the hero scene. */
+@utility bg-glow {
+  background: radial-gradient(closest-side, color-mix(in oklch, var(--primary) 22%, transparent), transparent);
+}
+
+/* The cabinet window dissolves into the page instead of ending with an edge. */
+@utility mask-fade-bottom {
+  mask-image: linear-gradient(to bottom, black 70%, transparent);
+}
+
+/* Fades in and rises as the block scrolls into view. Without scroll timelines it is simply visible. */
+@utility reveal {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}
+
+/* The cabinet window leans back and straightens while it scrolls up (Apple-style object on scroll). */
+@utility tilt-in {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      transform-origin: 50% 0;
+      animation: tilt-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+  }
+}
+
+/* Hero picture fades in and rises once. One HTML layer, so the compositor animates it:
+   per-bar transforms inside the SVG ran on the main thread and recalculated styles (perf-auditor, RUN 2). */
+@utility rise-in {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: reveal 700ms var(--ease-standard) 150ms both;
+  }
+}
+
+/* Sticky landing header: its bottom border appears after the first 64px of scrolling. */
+@utility edge-on-scroll {
+  @supports (animation-timeline: scroll()) {
+    animation: edge-on-scroll linear both;
+    animation-timeline: scroll();
+    animation-range: 0 64px;
+  }
+}
+
+@keyframes edge-on-scroll {
+  to {
+    border-bottom-color: var(--border);
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes tilt-in {
+  from {
+    transform: perspective(1600px) rotateX(14deg) scale(0.96);
+  }
+}
+
 
 @layer base {
   * {

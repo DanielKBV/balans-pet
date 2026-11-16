@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { startDemo } from "./actions"
 
-export function DemoButton() {
+export function DemoButton({ variant = "outline" }: { variant?: "default" | "outline" }) {
   const t = useTranslations("landing")
   const [isPending, startTransition] = useTransition()
 
   return (
     <Button
       size="lg"
-      variant="outline"
+      variant={variant}
       disabled={isPending}
       onClick={() =>
         startTransition(async () => {
