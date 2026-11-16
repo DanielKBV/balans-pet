@@ -91,6 +91,9 @@
   /* Landing only (DESIGN.md §13): the cabinet window and the light edge on feature cards. */
   --shadow-showcase: var(--elevation-showcase);
   --shadow-highlight: var(--elevation-highlight);
+  /* Landing only: words of the problem phrase before they light up. */
+  --color-faint: var(--faint);
+  --shadow-cta: var(--elevation-cta);
 
   /* Motion */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -172,6 +175,8 @@
   --elevation-dialog: 0 16px 40px -8px oklch(0.21 0.02 264 / 0.18);
   --elevation-showcase: 0 40px 80px -24px oklch(0.21 0.02 264 / 0.25);
   --elevation-highlight: inset 0 1px 0 oklch(1 0 0 / 0.6);
+  --faint: oklch(0.82 0.006 270);
+  --elevation-cta: 0 18px 50px -10px color-mix(in oklch, var(--primary) 30%, transparent);
 }
 
 .dark {
@@ -235,11 +240,29 @@
 
   --elevation-popover: 0 4px 12px -2px oklch(0 0 0 / 0.5);
   --elevation-dialog: 0 16px 40px -8px oklch(0 0 0 / 0.6);
-  --elevation-showcase: 0 40px 100px -20px oklch(0 0 0 / 0.7);
+  --elevation-showcase:
+    0 60px 120px -40px color-mix(in oklch, var(--primary) 30%, transparent), 0 30px 80px oklch(0 0 0 / 0.75);
+  --faint: oklch(0.31 0.008 270);
+  --elevation-cta: 0 0 0 6px oklch(1 0 0 / 0.07), 0 18px 50px -10px color-mix(in oklch, var(--primary) 40%, transparent);
   --elevation-highlight: inset 0 1px 0 oklch(1 0 0 / 0.07);
 }
 
 /* Type scale. Body text is 16px everywhere; only chart axis labels go below 14px. */
+/* Landing only: the problem phrase that lights up word by word, 30 → 58px. */
+@utility text-statement {
+  font-size: clamp(1.875rem, 4.6vw, 3.625rem);
+  line-height: 1.12;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+/* Landing only: block headings and hero step headings, 30 → 52px. */
+@utility text-section {
+  font-size: clamp(1.875rem, 4.2vw, 3.25rem);
+  line-height: 1.06;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
 /* Landing headline only; product pages stop at text-title. */
 @utility text-hero {
   font-size: 2.25rem; /* 36px phone */
@@ -402,10 +425,198 @@
 
 @keyframes tilt-in {
   from {
-    transform: perspective(1600px) rotateX(14deg) scale(0.96);
+    transform: perspective(1600px) rotateX(22deg) scale(0.9);
   }
 }
 
+/* Indigo light that follows the cursor inside a card, plus a glowing edge drawn through a mask.
+   --mx / --my come from <Spotlight>. Only on devices with a real pointer. */
+@utility spotlight {
+  position: relative;
+  isolation: isolate;
+  --mx: 50%;
+  --my: 50%;
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms var(--ease-standard);
+  }
+  &::before {
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(420px circle at var(--mx) var(--my), color-mix(in oklch, var(--primary) 14%, transparent), transparent 45%);
+  }
+  &::after {
+    inset: -1px;
+    padding: 1px;
+    background: radial-gradient(260px circle at var(--mx) var(--my), color-mix(in oklch, var(--primary-text) 70%, transparent), transparent 60%);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+  @media (hover: hover) {
+    &:hover::before,
+    &:hover::after {
+      opacity: 1;
+    }
+  }
+}
+
+/* Living arrow: the shaft appears and the head moves 3px when its button or link is hovered. */
+.live-arrow .shaft {
+  opacity: 0;
+  transition: opacity 200ms var(--ease-standard);
+}
+.live-arrow .head {
+  transition: transform 200ms var(--ease-standard);
+}
+:is(a, button, [data-arrow-host]):is(:hover, :focus-visible) .live-arrow .shaft {
+  opacity: 1;
+}
+:is(a, button, [data-arrow-host]):is(:hover, :focus-visible) .live-arrow .head {
+  transform: translateX(3px);
+}
+
+
+/* ---- Landing card mini-animations (docs/launch/RUN_2B, values from the approved prototype).
+   Plain global classes with an lp- prefix: the Turbopack *.css rule in next.config turns CSS modules into global CSS.
+   A card plays when its <PlayCard> sets [data-play]. Only transform, opacity and colour. ---- */
+
+/* Block 2: pains */
+.lp-ill {
+  position: relative;
+  height: 7.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+.lp-note {
+  display: grid;
+  align-content: center;
+  gap: 0.625rem;
+  padding-inline: 1.375rem;
+}
+.lp-note i {
+  display: block;
+  height: 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--border);
+}
+.lp-note i:nth-child(2) { width: 70%; }
+.lp-note i:nth-child(3) { width: 85%; }
+.lp-note i:nth-child(4) { width: 40%; }
+[data-play] .lp-note i { animation: lp-fade-line 1.6s var(--ease-standard) forwards; }
+[data-play] .lp-note i:nth-child(2) { animation-delay: 0.15s; }
+[data-play] .lp-note i:nth-child(3) { animation-delay: 0.3s; }
+[data-play] .lp-note i:nth-child(4) { animation-delay: 0.45s; }
+@keyframes lp-fade-line {
+  to { opacity: 0.08; transform: translateX(30px); }
+}
+
+.lp-sheet {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+  padding: 0.875rem;
+}
+.lp-sheet i {
+  height: 1rem;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background-color 300ms, box-shadow 300ms;
+}
+[data-play] .lp-sheet i:nth-child(9) { background: var(--expense-subtle); transition-delay: 0.4s; }
+[data-play] .lp-sheet i:nth-child(16) { background: var(--expense-subtle); transition-delay: 0.8s; }
+[data-play] .lp-sheet i:nth-child(23) { background: var(--expense-subtle); box-shadow: inset 0 0 0 1px var(--expense); transition-delay: 1.2s; }
+.lp-cursor {
+  position: absolute;
+  left: 0.875rem;
+  top: 0.875rem;
+  width: calc((100% - 1.75rem - 15px) / 6);
+  height: 1rem;
+  border: 2px solid var(--primary-text);
+  border-radius: 3px;
+  opacity: 0;
+}
+[data-play] .lp-cursor { opacity: 1; animation: lp-cell-hop 1.6s steps(1) forwards; }
+@keyframes lp-cell-hop {
+  25% { transform: translate(calc(100% + 3px), 19px); }
+  50% { transform: translate(calc(300% + 9px), 38px); }
+  75%, 100% { transform: translate(calc(400% + 12px), 57px); }
+}
+.lp-error {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.625rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--expense) 35%, transparent);
+  border-radius: var(--radius-md);
+  background: var(--expense-subtle);
+  color: var(--expense);
+  font: 500 0.75rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 300ms, transform 300ms;
+}
+[data-play] .lp-error { opacity: 1; transform: none; transition-delay: 1.3s; }
+
+.lp-leak {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.625rem;
+  padding-bottom: 1rem;
+}
+.lp-leak i {
+  width: 1.375rem;
+  height: 4.75rem;
+  border-radius: 4px 4px 0 0;
+  background: var(--income);
+  opacity: 0.5;
+  transform-origin: bottom;
+  transition: transform 900ms var(--ease-standard), background-color 900ms;
+}
+.lp-leak i:nth-child(1) { transform: scaleY(0.92); }
+.lp-leak i:nth-child(2) { transform: scaleY(0.79); }
+.lp-leak i:nth-child(4) { transform: scaleY(0.87); }
+[data-play] .lp-leak i { background: var(--expense); }
+[data-play] .lp-leak i:nth-child(1) { transform: scaleY(0.53); }
+[data-play] .lp-leak i:nth-child(2) { transform: scaleY(0.32); }
+[data-play] .lp-leak i:nth-child(3) { transform: scaleY(0.39); }
+[data-play] .lp-leak i:nth-child(4) { transform: scaleY(0.16); }
+
+/* Block 3: hint dots, totals that flash, entries that slide in */
+.lp-hot { animation: lp-ping 2.2s infinite; }
+@keyframes lp-ping {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 60%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 14px transparent; }
+}
+.lp-flash { animation: lp-flash 600ms var(--ease-standard); }
+@keyframes lp-flash {
+  30% { color: var(--income); transform: translateY(-2px); }
+}
+.lp-entry-in { animation: lp-entry-in 700ms var(--ease-standard); }
+@keyframes lp-entry-in {
+  from { opacity: 0; transform: translateY(-14px); background: var(--primary-subtle); }
+}
+
+/* Block 5: bento */
+.lp-blurred { transition: filter 500ms, opacity 500ms; }
+[data-play] .lp-blurred { filter: blur(10px); opacity: 0.25; }
+.lp-avatar { transition: transform 500ms var(--ease-standard), opacity 400ms; }
+.lp-avatar:not(:first-child) { opacity: 0; transform: translateX(-14px); }
+[data-play] .lp-avatar:not(:first-child) { opacity: 1; transform: none; }
+[data-play] .lp-avatar:nth-child(3) { transition-delay: 0.15s; }
+[data-play] .lp-avatar:nth-child(4) { transition-delay: 0.3s; }
+.lp-share {
+  transform-origin: left;
+  transform: scaleX(0.15);
+  transition: transform 1s var(--ease-standard);
+}
+[data-play] .lp-share { transform: scaleX(var(--w)); }
 
 @layer base {
   * {
@@ -436,4 +647,10 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Reduced motion: landing bento shows its final state instead of the starting one. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-share { transform: scaleX(var(--w)); }
+  .lp-avatar:not(:first-child) { opacity: 1; transform: none; }
 }

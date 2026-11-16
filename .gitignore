@@ -48,3 +48,8 @@ next-env.d.ts
 
 # impeccable design critique snapshots
 /.impeccable
+
+# local screenshots, lighthouse reports, delivery archives
+/_i
+/.lighthouse
+/*.zip

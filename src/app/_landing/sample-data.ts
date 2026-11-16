@@ -21,11 +21,29 @@ export function changePercent(current: number, previous: number) {
   return ((current - previous) / Math.abs(previous)) * 100
 }
 
-/** Keys in `landing.sample`; `daysAgo` counts from today in Bishkek. */
-export const SAMPLE_ENTRIES = [
+/** Keys in `landing.sample`. */
+export type SampleEntry = {
+  category: "exteriorWash" | "fullWash" | "detailing" | "supplies" | "utilities" | "other"
+  comment: "utilitiesComment" | "otherComment" | null
+  amount: number
+  type: "income" | "expense"
+}
+
+/** `daysAgo` counts from today in Bishkek. */
+export const SAMPLE_ENTRIES: (SampleEntry & { daysAgo: number })[] = [
   { category: "fullWash", comment: null, amount: 5_400, type: "income", daysAgo: 0 },
   { category: "exteriorWash", comment: null, amount: 4_800, type: "income", daysAgo: 0 },
   { category: "detailing", comment: null, amount: 3_200, type: "income", daysAgo: 1 },
   { category: "supplies", comment: null, amount: 5_600, type: "expense", daysAgo: 1 },
   { category: "other", comment: "otherComment", amount: 900, type: "income", daysAgo: 2 },
-] as const
+]
+
+/** New entries that keep arriving in the landing's cabinet window, in the demo seed's ranges. */
+export const LIVE_FEED: SampleEntry[] = [
+  { category: "exteriorWash", comment: null, amount: 3_600, type: "income" },
+  { category: "fullWash", comment: null, amount: 5_400, type: "income" },
+  { category: "utilities", comment: "utilitiesComment", amount: 7_200, type: "expense" },
+  { category: "detailing", comment: null, amount: 3_200, type: "income" },
+  { category: "other", comment: "otherComment", amount: 900, type: "income" },
+  { category: "supplies", comment: null, amount: 5_600, type: "expense" },
+]
