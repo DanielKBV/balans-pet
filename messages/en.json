@@ -67,7 +67,9 @@
       "step1Text": "From a phone. Amount, one tap for the category, done. No more notebook.",
       "step2Kicker": "Step 2. Owner",
       "step2Title": "You see your profit without doing any math",
-      "step2Text": "Revenue, expenses and profit for the month update after every entry."
+      "step2Text": "Revenue, expenses and profit for the month update after every entry.",
+      "screenToday": "Today",
+      "screenNewEntry": "New entry"
     },
     "problem": {
       "aria": "Why Balans",

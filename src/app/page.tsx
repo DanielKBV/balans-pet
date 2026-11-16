@@ -1,19 +1,24 @@
 import type { Viewport } from "next"
 import Link from "next/link"
 import { connection } from "next/server"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 import { LocaleToggle } from "@/components/locale-toggle"
 import { Logo } from "@/components/logo"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { currentMonth } from "@/lib/month"
+import type { Locale } from "@/i18n/config"
+import { formatChange } from "@/lib/format"
+import { currentMonth, monthName } from "@/lib/month"
 import { AuthorCard } from "./_landing/author-card"
 import { Features } from "./_landing/features"
+import { Hero } from "./_landing/hero"
 import { Magnetic } from "./_landing/magnetic"
 import { Spotlight } from "./_landing/motion"
 import { Problem } from "./_landing/problem"
 import { ProductWindow } from "./_landing/product-window"
+import { changePercent, sampleMonths } from "./_landing/sample-data"
+import { PRIMARY_PILL } from "./_landing/styles"
 import { DemoButton } from "./demo/demo-button"
 
 // The landing is dark only: the browser bar matches --background of the dark theme.
@@ -24,9 +29,6 @@ const SECTIONS = [
   { id: "cabinet", label: "cabinet" },
   { id: "features", label: "features" },
 ] as const
-
-/** Landing primary action: a light pill (DESIGN.md §13). */
-const primaryPill = "rounded-full bg-foreground text-background hover:bg-primary-foreground"
 
 const footerLink =
   "inline-flex min-h-11 items-center rounded-sm underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -43,6 +45,21 @@ export default async function Home() {
 
 function Landing() {
   const t = useTranslations()
+  const locale = useLocale() as Locale
+  const [previous, current] = sampleMonths().slice(-2)
+  const profit = current.income - current.expense
+  // What the 3D screen card shows, in the visitor's language.
+  const screen = {
+    brand: "Balans",
+    today: t("landing.hero.screenToday"),
+    newEntry: t("landing.hero.screenNewEntry"),
+    income: t("common.income"),
+    expense: t("common.expense"),
+    chips: [t("landing.sample.exteriorWash"), t("landing.sample.fullWash"), t("landing.sample.detailing")] as [string, string, string],
+    save: t("entries.submit"),
+    profitTitle: t("dashboard.profitFor", { month: monthName(current.month, locale) }),
+    profitChange: `↗ ${formatChange(changePercent(profit, previous.income - previous.expense), locale)} ${t("dashboard.vsLastMonth")}`,
+  }
   return (
     <>
       <Spotlight />
@@ -63,33 +80,26 @@ function Landing() {
             <Link href="/login" className={cn(buttonVariants({ variant: "outline" }), "rounded-full")}>
               {t("common.signIn")}
             </Link>
-            <DemoButton variant="default" arrow className={cn(primaryPill, "h-control px-4")} />
+            <DemoButton variant="default" arrow className={cn(PRIMARY_PILL, "h-control px-4")} />
           </div>
         </div>
       </header>
 
       <main id="main" className="flex-1">
-        {/* Stage 1 placeholder: step 0 of the scroll hero; the 3D scene replaces the frame in stage 2. */}
-        <section
-          id="top"
-          className="page-container grid min-h-[calc(100svh-var(--spacing-header))] items-center gap-10 py-12 lg:grid-cols-2"
-        >
-          <div className="flex flex-col items-start gap-6">
-            <p className="rounded-full inline-flex items-center gap-2 border bg-card py-1 pr-3 pl-1 text-small text-muted-foreground">
-              <b className="rounded-full bg-primary-subtle px-2 py-0.5 font-medium text-primary-text">Balans</b>
-              {t("landing.hero.badge")}
-            </p>
-            <h1 className="max-w-2xl text-hero text-balance">{t("landing.hero.title")}</h1>
-            <p className="max-w-xl text-muted-foreground text-pretty">{t("landing.hero.lead")}</p>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-              <DemoButton variant="default" arrow className={primaryPill} />
-              <p className="text-small text-subtle-foreground">{t("landing.hero.scroll")} ↓</p>
-            </div>
+        <Hero screen={screen}>
+          <p className="inline-flex items-center gap-2 rounded-full border bg-card py-1 pr-3 pl-1 text-small text-muted-foreground">
+            <b className="rounded-full bg-primary-subtle px-2 py-0.5 font-medium text-primary-text">Balans</b>
+            {t("landing.hero.badge")}
+          </p>
+          <h1 id="hero-title" className="max-w-2xl text-hero text-balance">
+            {t("landing.hero.title")}
+          </h1>
+          <p className="max-w-xl text-muted-foreground text-pretty">{t("landing.hero.lead")}</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <DemoButton variant="default" arrow className={PRIMARY_PILL} />
+            <p className="text-small text-subtle-foreground">{t("landing.hero.scroll")} ↓</p>
           </div>
-          <div aria-hidden className="-order-1 flex justify-center lg:order-none">
-            <div className="aspect-[1/2] h-[min(20rem,34svh)] rounded-2xl border bg-card shadow-showcase lg:h-[min(36rem,70svh)]" />
-          </div>
-        </section>
+        </Hero>
 
         <Problem />
         <ProductWindow />
@@ -103,7 +113,7 @@ function Landing() {
             </h2>
             <p className="max-w-xl text-muted-foreground text-pretty">{t("landing.cta.text")}</p>
             <Magnetic>
-              <DemoButton variant="default" arrow className={cn(primaryPill, "h-13.5 px-6.5 transition-shadow hover:shadow-cta")} />
+              <DemoButton variant="default" arrow className={cn(PRIMARY_PILL, "h-13.5 px-6.5 transition-shadow hover:shadow-cta")} />
             </Magnetic>
           </div>
         </section>
