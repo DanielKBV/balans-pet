@@ -69,7 +69,10 @@
       "step2Title": "You see your profit without doing any math",
       "step2Text": "Revenue, expenses and profit for the month update after every entry.",
       "screenToday": "Today",
-      "screenNewEntry": "New entry"
+      "screenNewEntry": "New entry",
+      "screenChip1": "Exterior",
+      "screenChip2": "Full wash",
+      "screenChip3": "Interior"
     },
     "problem": {
       "aria": "Why Balans",

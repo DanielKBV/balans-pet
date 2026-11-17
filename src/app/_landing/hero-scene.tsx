@@ -401,7 +401,8 @@ function Rig({
     const value = step === 1 ? AMOUNT * clamp((p - 0.36) / 0.18, 0, 1) : step === 2 ? PROFIT * clamp((p - 0.68) / 0.2, 0, 1) : 0
     screen.draw(step, value)
 
-    const t = state.clock.elapsedTime
+    // Capture mode freezes the time, so the pictures of both languages show the coins in the same places.
+    const t = capture ? 1.5 : state.clock.elapsedTime
     // Narrower than the 900×1000 pictures: pull the camera back so the whole scene fits the width, like object-contain.
     state.camera.position.z = 12 * Math.max(1, 0.9 / (state.size.width / state.size.height))
     // Same framing on every screen: the camera keeps the height, so one set of poster pictures fits all.

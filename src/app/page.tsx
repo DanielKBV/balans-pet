@@ -55,7 +55,8 @@ function Landing() {
     newEntry: t("landing.hero.screenNewEntry"),
     income: t("common.income"),
     expense: t("common.expense"),
-    chips: [t("landing.sample.exteriorWash"), t("landing.sample.fullWash"), t("landing.sample.detailing")] as [string, string, string],
+    // Short chip labels, as in the prototype: the full category names do not fit the 3D screen.
+    chips: [t("landing.hero.screenChip1"), t("landing.hero.screenChip2"), t("landing.hero.screenChip3")] as [string, string, string],
     save: t("entries.submit"),
     profitTitle: t("dashboard.profitFor", { month: monthName(current.month, locale) }),
     profitChange: `↗ ${formatChange(changePercent(profit, previous.income - previous.expense), locale)} ${t("dashboard.vsLastMonth")}`,
