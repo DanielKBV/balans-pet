@@ -70,7 +70,7 @@ function Landing() {
             {/* Phone: only the mark, so «Sign in» and the demo button fit at 360px. */}
             <Logo className="max-sm:[&>span+span]:sr-only" />
           </Link>
-          <nav aria-label={t("landing.nav.aria")} className="ml-4 hidden items-center gap-1 md:flex">
+          <nav aria-label={t("landing.nav.aria")} className="ml-4 hidden items-center gap-1 min-[900px]:flex">
             {SECTIONS.map(({ id, label }) => (
               <a key={id} href={`#${id}`} className={buttonVariants({ variant: "ghost", className: "text-muted-foreground" })}>
                 {t(`landing.nav.${label}`)}
@@ -88,7 +88,7 @@ function Landing() {
 
       <main id="main" className="flex-1">
         <Hero screen={screen}>
-          <p className="inline-flex items-center gap-2 rounded-full border bg-card py-1 pr-3 pl-1 text-small text-muted-foreground">
+          <p className="inline-flex items-center gap-2 rounded-full border bg-card py-1 pr-3 pl-1 text-small text-muted-foreground short:hidden">
             <b className="rounded-full bg-primary-subtle px-2 py-0.5 font-medium text-primary-text">Balans</b>
             {t("landing.hero.badge")}
           </p>

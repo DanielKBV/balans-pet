@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Claude Code skills and agents, not part of the app.
     ".claude/**",
+    // Draco decoder copied from three/examples (vendor build, served for the hero coins model).
+    "public/draco/**",
   ]),
 ]);
 

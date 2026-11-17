@@ -4,6 +4,12 @@
 
 /* Dark theme: inside .dark, unless a nested .light block opts back out (used by /design). */
 @custom-variant dark (&:where(.dark, .dark *):not(:where(.light, .light *)));
+/* Landing hero on short phones: phone layout below 900 px and at most 760 px tall (360×640, Android 360×800 with the address bar). */
+@custom-variant short {
+  @media (width < 900px) and (height <= 760px) {
+    @slot;
+  }
+}
 
 /* All design decisions are explained in docs/DESIGN.md */
 

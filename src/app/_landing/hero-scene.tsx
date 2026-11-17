@@ -1,26 +1,50 @@
 "use client"
 
-import { useEffect, useMemo, useRef, type RefObject } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { PerformanceMonitor, useGLTF } from "@react-three/drei"
 import * as THREE from "three"
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js"
 
 import { stepOf, type ScreenLabels } from "./hero-shared"
 
 const AMOUNT = 5_400
 const PROFIT = 142_800
-const COIN_KINDS = {
-  som: { sym: "som", color: 0xc6cad4, metalness: 1, roughness: 0.3 },
-  b: { sym: "B", color: 0x7774ff, metalness: 0.75, roughness: 0.32 },
-  usd: { sym: "$", color: 0xd9b45e, metalness: 1, roughness: 0.3 },
-  eur: { sym: "€", color: 0xb9c3d6, metalness: 1, roughness: 0.3 },
-  rub: { sym: "₽", color: 0xc08457, metalness: 1, roughness: 0.3 },
-  btc: { sym: "₿", color: 0xe3a24a, metalness: 1, roughness: 0.3 },
-} as const
-type CoinKind = keyof typeof COIN_KINDS
-const HERO_COINS: CoinKind[] = ["som", "usd", "b", "eur", "som", "btc", "rub"]
+/** Blender coins, Draco-compressed (docs/launch/PATCH_MONETY.md); the decoder is served from /draco, not a CDN. */
+const COINS_URL = "/models/balans-coins.glb"
+const DRACO_URL = "/draco/"
+
+type CoinKind = "som" | "usd" | "eur" | "rub" | "btc" | "b"
+/** [kind, x, y, z, tilt x, tilt y, tilt z, size], relative to the phone centre (phone 2.5 × 5).
+    Rule: a coin over the phone is either in front of the glass (z ≥ 1.8) or behind it (z ≤ −1.8), never inside. */
+type Slot = [CoinKind, number, number, number, number, number, number, number]
+const DESKTOP_SLOTS: Slot[] = [
+  ["som", -1.75, 1.95, 1.9, -0.35, 0.85, 0.15, 1.15],
+  ["usd", 1.5, 2.3, -1.9, 0.3, -0.7, -0.2, 0.9],
+  ["b", -2.2, -0.35, 1.95, 0.2, 0.95, -0.1, 0.9],
+  ["eur", 2.0, 0.4, 2.0, -0.25, -0.9, 0.25, 1.1],
+  ["som", -1.5, -2.35, -1.8, 0.45, 0.6, 0.1, 0.9],
+  ["btc", 1.65, -2.0, 1.8, 0.4, -0.75, -0.3, 1.2],
+  ["rub", 2.75, -0.85, -0.5, -0.1, -1.0, 0.1, 0.85],
+]
+const MOBILE_SLOTS: Slot[] = [
+  ["som", -1.85, 1.85, 1.9, -0.35, 0.85, 0.15, 1.45],
+  ["eur", 1.95, 1.25, 2.0, -0.25, -0.9, 0.25, 1.3],
+  ["btc", 0.15, 2.95, -1.8, 0.4, -0.75, -0.3, 1.0],
+  ["b", -2.35, -0.75, 1.9, 0.2, 0.95, -0.1, 1.0],
+]
+const COIN_RADIUS = 0.55
+const FACE_Y = 0.085
+/** Coins appear one by one once the model is in: 80 ms apart, 500 ms each. */
+const APPEAR_GAP = 0.08
+const APPEAR_TIME = 0.5
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+const ease = (t: number) => t * t * (3 - 2 * t)
+const FACE_CAMERA = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0))
+const _tilt = new THREE.Quaternion()
+const _euler = new THREE.Euler()
 
 /* ---------- shapes ---------- */
 
@@ -49,125 +73,6 @@ function shapePlane(w: number, h: number, r: number) {
   return g
 }
 
-/* ---------- textures drawn in code ---------- */
-
-/** Soft studio from three softboxes, baked once into an environment map: metal gets real highlights, no HDR file. */
-function makeEnvironment(gl: THREE.WebGLRenderer) {
-  const studio = new THREE.Scene()
-  const c = document.createElement("canvas")
-  c.width = 16
-  c.height = 256
-  const x = c.getContext("2d")!
-  const gradient = x.createLinearGradient(0, 0, 0, 256)
-  gradient.addColorStop(0, "#3a3d4d")
-  gradient.addColorStop(0.5, "#101118")
-  gradient.addColorStop(1, "#07070a")
-  x.fillStyle = gradient
-  x.fillRect(0, 0, 16, 256)
-  const sky = new THREE.CanvasTexture(c)
-  sky.colorSpace = THREE.SRGBColorSpace
-  studio.add(new THREE.Mesh(new THREE.SphereGeometry(20, 32, 16), new THREE.MeshBasicMaterial({ map: sky, side: THREE.BackSide })))
-  const boxes: [number, number, number, number, number, number, number][] = [
-    [0, 8, 6, 10, 3, 0xffffff, 1.6],
-    [-9, 2, 2, 3, 8, 0xb9b8ff, 0.9],
-    [9, -1, 3, 3, 6, 0xffffff, 0.7],
-  ]
-  for (const [px, py, pz, w, h, color, intensity] of boxes) {
-    const m = new THREE.Mesh(
-      new THREE.PlaneGeometry(w, h),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity), side: THREE.DoubleSide })
-    )
-    m.position.set(px, py, pz)
-    m.lookAt(0, 0, 0)
-    studio.add(m)
-  }
-  const pmrem = new THREE.PMREMGenerator(gl)
-  const texture = pmrem.fromScene(studio, 0.03).texture
-  pmrem.dispose()
-  studio.traverse((o) => {
-    if (o instanceof THREE.Mesh) {
-      o.geometry.dispose()
-      o.material.map?.dispose()
-      o.material.dispose()
-    }
-  })
-  return texture
-}
-
-/** «С» with a bar under it: the som sign, drawn with an arc and a rectangle (fonts rarely have it). */
-function drawSymbol(x: CanvasRenderingContext2D, sym: string, cx: number, cy: number, S: number, font: string) {
-  if (sym === "som") {
-    const r = S * 0.17
-    x.lineWidth = S * 0.055
-    x.lineCap = "butt"
-    x.beginPath()
-    x.arc(cx, cy - S * 0.03, r, Math.PI * 0.28, Math.PI * 1.72, false)
-    x.stroke()
-    x.fillRect(cx - r * 1.05, cy + r * 0.95, r * 2.1, S * 0.045)
-    return
-  }
-  x.font = `700 ${S * 0.44}px ${font}`
-  x.fillText(sym, cx, cy + S * 0.02)
-}
-
-function coinFace(sym: string, bump: boolean, font: string) {
-  const S = 512
-  const h = S / 2
-  const c = document.createElement("canvas")
-  c.width = c.height = S
-  const x = c.getContext("2d")!
-  if (bump) {
-    x.fillStyle = "#808080"
-  } else {
-    const g = x.createRadialGradient(h * 0.7, h * 0.6, 10, h, h, h)
-    g.addColorStop(0, "#f2f3f6")
-    g.addColorStop(1, "#a9adb8")
-    x.fillStyle = g
-  }
-  x.fillRect(0, 0, S, S)
-  x.lineWidth = 10
-  x.strokeStyle = bump ? "#c8c8c8" : "#d3d6dd"
-  x.beginPath()
-  x.arc(h, h, h * 0.84, 0, Math.PI * 2)
-  x.stroke()
-  for (let i = 0; i < 60; i++) {
-    const a = (i / 60) * Math.PI * 2
-    x.fillStyle = bump ? "#b0b0b0" : "#c3c6ce"
-    x.beginPath()
-    x.arc(h + Math.cos(a) * h * 0.75, h + Math.sin(a) * h * 0.75, 4, 0, Math.PI * 2)
-    x.fill()
-  }
-  x.textAlign = "center"
-  x.textBaseline = "middle"
-  const put = (color: string, dx: number, dy: number) => {
-    x.fillStyle = color
-    x.strokeStyle = color
-    drawSymbol(x, sym, h + dx, h + dy, S, font)
-  }
-  if (bump) put("#ffffff", 0, 0)
-  else {
-    put("#8e93a0", 2, 2)
-    put("#ffffff", -1, -1)
-    put("#dcdfe5", 0, 0)
-  }
-  const t = new THREE.CanvasTexture(c)
-  t.anisotropy = 4
-  // The cylinder cap maps UVs a quarter turn off: turn the face so the symbol stands upright.
-  t.center.set(0.5, 0.5)
-  t.rotation = Math.PI / 2
-  if (!bump) t.colorSpace = THREE.SRGBColorSpace
-  return t
-}
-
-/** Puts the studio environment on the scene; returns the cleanup. */
-function applyStudio(gl: THREE.WebGLRenderer, scene: THREE.Scene) {
-  const env = makeEnvironment(gl)
-  scene.environment = env
-  return () => {
-    scene.environment = null
-    env.dispose()
-  }
-}
 
 /** Normalised pointer position, written by a window listener; returns the cleanup. */
 function trackPointer(target: { current: { x: number; y: number } }) {
@@ -176,72 +81,6 @@ function trackPointer(target: { current: { x: number; y: number } }) {
   }
   addEventListener("pointermove", onMove, { passive: true })
   return () => removeEventListener("pointermove", onMove)
-}
-
-/* ---------- objects ---------- */
-
-/** One geometry for every coin, materials cached per kind (threejs-performance). */
-function useCoinFactory(font: string) {
-  return useMemo(() => {
-    const R = 0.55
-    const H = 0.12
-    const rc = document.createElement("canvas")
-    rc.width = 512
-    rc.height = 8
-    const rx = rc.getContext("2d")!
-    for (let i = 0; i < 512; i += 4) {
-      rx.fillStyle = (i / 4) % 2 ? "#ffffff" : "#000000"
-      rx.fillRect(i, 0, 4, 8)
-    }
-    const reed = new THREE.CanvasTexture(rc)
-    reed.wrapS = THREE.RepeatWrapping
-    reed.repeat.set(2, 1)
-    const body = new THREE.CylinderGeometry(R, R, H, 96)
-    const lip = new THREE.TorusGeometry(R - 0.03, 0.03, 12, 96)
-    const materials = new Map<CoinKind, THREE.Material[]>()
-    const materialsFor = (kind: CoinKind) => {
-      if (!materials.has(kind)) {
-        const k = COIN_KINDS[kind]
-        const metal = { color: k.color, metalness: k.metalness, roughness: k.roughness, envMapIntensity: 1.2 }
-        const side = new THREE.MeshStandardMaterial({ ...metal, bumpMap: reed, bumpScale: 0.6 })
-        const face = new THREE.MeshStandardMaterial({
-          ...metal,
-          map: coinFace(k.sym, false, font),
-          bumpMap: coinFace(k.sym, true, font),
-          bumpScale: 1.2,
-          roughness: k.roughness + 0.04,
-        })
-        const rim = new THREE.MeshStandardMaterial({ ...metal, roughness: 0.22 })
-        materials.set(kind, [side, face, rim])
-      }
-      return materials.get(kind)!
-    }
-    const make = (kind: CoinKind) => {
-      const [side, face, rim] = materialsFor(kind)
-      const g = new THREE.Group()
-      g.add(new THREE.Mesh(body, [side, face, face]))
-      for (const sign of [1, -1]) {
-        const l = new THREE.Mesh(lip, rim)
-        l.rotation.x = Math.PI / 2
-        l.position.y = (sign * H) / 2
-        g.add(l)
-      }
-      return g
-    }
-    const dispose = () => {
-      body.dispose()
-      lip.dispose()
-      reed.dispose()
-      for (const list of materials.values())
-        for (const m of list) {
-          const s = m as THREE.MeshStandardMaterial
-          s.map?.dispose()
-          if (s.bumpMap !== reed) s.bumpMap?.dispose()
-          m.dispose()
-        }
-    }
-    return { make, dispose }
-  }, [font])
 }
 
 /** Paints the interface on the screen card. Repaints only when the step or the shown number changes. */
@@ -320,6 +159,135 @@ function createScreen(labels: ScreenLabels, font: string) {
   }
 }
 
+
+/** The «room» environment of three.js baked into reflections (no HDR file); returns the cleanup. */
+function applyRoom(gl: THREE.WebGLRenderer, scene: THREE.Scene) {
+  const pmrem = new THREE.PMREMGenerator(gl)
+  const room = new RoomEnvironment()
+  const env = pmrem.fromScene(room, 0.04).texture
+  pmrem.dispose()
+  room.dispose()
+  scene.environment = env
+  return () => {
+    scene.environment = null
+    env.dispose()
+  }
+}
+
+/* ---------- coins ---------- */
+
+type CoinNodes = Record<string, THREE.Mesh>
+
+/** «Silver» from prototype v4. Each coin gets its own pair (they fade in one by one); the shader is shared. */
+function coinMaterials() {
+  return {
+    body: new THREE.MeshStandardMaterial({ color: "#cfd1d6", metalness: 1, roughness: 0.22, envMapIntensity: 1.25 }),
+    sym: new THREE.MeshStandardMaterial({ color: "#ebecef", metalness: 1, roughness: 0.12, envMapIntensity: 1.35 }),
+  }
+}
+
+/** Coin = group → inner group (radius 0.55) → body + the symbol on both faces. Geometry is shared by all coins. */
+function buildCoin(nodes: CoinNodes, kind: CoinKind) {
+  const { body, sym } = coinMaterials()
+  const outer = new THREE.Group()
+  const inner = new THREE.Group()
+  inner.scale.setScalar(COIN_RADIUS)
+  outer.add(inner)
+  inner.add(new THREE.Mesh(nodes.coin_body.geometry, body))
+  const top = new THREE.Mesh(nodes[`sym_${kind}`].geometry, sym)
+  top.position.y = FACE_Y
+  const bottom = new THREE.Mesh(nodes[`sym_${kind}`].geometry, sym)
+  bottom.position.y = -FACE_Y
+  bottom.rotation.x = Math.PI
+  inner.add(top, bottom)
+  outer.userData.materials = [body, sym]
+  return outer
+}
+
+/** Tilt quaternion × «face the camera» (rotation.x = π/2). */
+function orient(coin: THREE.Object3D, ax: number, ay: number, az: number) {
+  _euler.set(ax, ay, az)
+  _tilt.setFromEuler(_euler)
+  coin.quaternion.copy(_tilt).multiply(FACE_CAMERA)
+}
+
+/** Shared state the card rig writes every frame and the coins read. */
+type Pose = { p: number; t: number; baseX: number; baseY: number; scale: number; mobile: boolean; mouse: { x: number; y: number } }
+
+function Coins({ pose, mobile, capture }: { pose: RefObject<Pose>; mobile: boolean; capture: boolean }) {
+  const { nodes } = useGLTF(COINS_URL, DRACO_URL) as unknown as { nodes: CoinNodes }
+  const slots = mobile ? MOBILE_SLOTS : DESKTOP_SLOTS
+  const coins = useMemo(() => slots.map(([kind]) => buildCoin(nodes, kind)), [nodes, slots])
+  const born = useRef<number | null>(null)
+
+  useEffect(
+    () => () => coins.forEach((c) => (c.userData.materials as THREE.Material[]).forEach((m) => m.dispose())),
+    [coins]
+  )
+
+  useFrame((state) => {
+    const { p, t, baseX, baseY, scale, mouse } = pose.current!
+    born.current ??= state.clock.elapsedTime
+    const sinceLoad = state.clock.elapsedTime - born.current
+    const wobble = 1
+    const cs = mobile ? 1 : scale
+    const targetY = mobile ? baseY + 2.6 : 0
+    coins.forEach((coin, i) => {
+      const [, x, y, z, ax, ay, az, size] = slots[i]
+      const ph = i * (mobile ? 1.7 : 1.3)
+      const fx = baseX + x * cs
+      const fy = y * cs + Math.sin(t * 0.7 + ph) * 0.12 * wobble
+      // Fly-in: first out (sideways for coins behind the phone, and forward), then to the centre in front of the glass.
+      const e = ease(clamp((p - 0.18 - i * 0.02) / 0.24, 0, 1))
+      const side = Math.sign(x) || 1
+      const outX = baseX + side * Math.max(Math.abs(x), 2.5) * cs
+      let px: number
+      let py = fy
+      let pz: number
+      let shrink = 1
+      if (e < 0.5) {
+        const a = ease(e * 2)
+        px = lerp(fx, z < 0 ? outX : fx, a)
+        pz = lerp(z, 1.6, a)
+      } else {
+        const a = ease((e - 0.5) * 2)
+        px = lerp(z < 0 ? outX : fx, baseX, a)
+        py = lerp(fy, targetY, a)
+        pz = 1.6
+        shrink = 1 - a * 0.96
+      }
+      // One by one after the model loads: scale 0.85 → 1 and opacity 0 → 1.
+      const k = capture ? 1 : clamp((sinceLoad - i * APPEAR_GAP) / APPEAR_TIME, 0, 1)
+      const appear = lerp(0.85, 1, ease(k))
+      for (const m of coin.userData.materials as THREE.MeshStandardMaterial[]) {
+        m.opacity = k
+        if (m.transparent !== k < 1) {
+          m.transparent = k < 1
+          m.needsUpdate = true
+        }
+      }
+      coin.position.set(px, py, pz)
+      coin.scale.setScalar(cs * shrink * size * 0.85 * appear)
+      // Hidden before it shrinks to a dot on the screen (a grey speck on a still frame).
+      coin.visible = shrink > 0.15 && k > 0
+      orient(
+        coin,
+        ax * (1 - e) + Math.sin(t * 0.55 + ph) * 0.12 * wobble + mouse.y * 0.12,
+        ay * (1 - e) + Math.sin(t * 0.4 + ph) * 0.18 * wobble + mouse.x * 0.2,
+        az + Math.sin(t * 0.3 + ph) * 0.08 * wobble
+      )
+    })
+  })
+
+  return (
+    <>
+      {coins.map((coin, i) => (
+        <primitive key={i} object={coin} />
+      ))}
+    </>
+  )
+}
+
 /* ---------- scene ---------- */
 
 function Rig({
@@ -328,30 +296,26 @@ function Rig({
   font,
   active,
   capture,
-  minFps,
+  mobile,
   onReady,
-  onSlow,
 }: {
   progress: RefObject<number>
   labels: ScreenLabels
   font: string
   active: boolean
-  /** Capture mode: no quality steps, the slow software renderer must not swap the scene for pictures. */
   capture: boolean
-  /** Below this, after DPR 1, the scene gives way to the pictures. */
-  minFps: number
+  /** Below 900 px: the phone is bigger and half visible, 4 coins, no 3D bars. */
+  mobile: boolean
   onReady: () => void
-  onSlow: () => void
 }) {
-  const { gl, scene, setFrameloop, setDpr } = useThree()
-  const coins = useCoinFactory(font)
+  const { gl, scene, setFrameloop } = useThree()
   const screen = useMemo(() => createScreen(labels, font), [labels, font])
   const card = useRef<THREE.Group>(null)
-  const coinGroup = useRef<THREE.Group>(null)
   const bars = useRef<THREE.Group>(null)
   const mouse = useRef({ x: 0, y: 0 })
   const tilt = useRef({ x: 0, y: 0 })
-  const frames = useRef({ shown: 0, count: 0, time: 0, ready: false, degraded: false })
+  const shown = useRef(0)
+  const pose = useRef<Pose>({ p: 0, t: 0, baseX: 0, baseY: 0, scale: 1, mobile, mouse: { x: 0, y: 0 } })
 
   const body = useMemo(() => {
     const g = new THREE.ExtrudeGeometry(roundRect(2.5, 5, 0.34), {
@@ -367,22 +331,8 @@ function Rig({
   }, [])
   const face = useMemo(() => shapePlane(2.34, 4.84, 0.26), [])
 
-  const coinMeshes = useMemo(
-    () =>
-      HERO_COINS.map((kind, i) => {
-        const m = coins.make(kind)
-        const a = (i / HERO_COINS.length) * Math.PI * 2
-        // Fixed per coin (no Math.random), so the poster and the live scene match.
-        m.userData = { sx: Math.cos(a) * 2.3 + 0.3, sy: Math.sin(a) * 2.7, sz: -1 + ((i * 37) % 20) / 10, ph: i * 0.9 }
-        return m
-      }),
-    [coins]
-  )
-
-  useEffect(() => applyStudio(gl, scene), [gl, scene])
+  useEffect(() => applyRoom(gl, scene), [gl, scene])
   useEffect(() => trackPointer(mouse), [])
-
-  useEffect(() => () => coins.dispose(), [coins])
   useEffect(
     () => () => {
       body.dispose()
@@ -395,7 +345,7 @@ function Rig({
   // No frames while the hero is off screen or the tab is hidden.
   useEffect(() => setFrameloop(active ? "always" : "never"), [active, setFrameloop])
 
-  useFrame((state, delta) => {
+  useFrame((state) => {
     const p = progress.current ?? 0
     const step = stepOf(p)
     const value = step === 1 ? AMOUNT * clamp((p - 0.36) / 0.18, 0, 1) : step === 2 ? PROFIT * clamp((p - 0.68) / 0.2, 0, 1) : 0
@@ -403,63 +353,28 @@ function Rig({
 
     // Capture mode freezes the time, so the pictures of both languages show the coins in the same places.
     const t = capture ? 1.5 : state.clock.elapsedTime
-    // Narrower than the 900×1000 pictures: pull the camera back so the whole scene fits the width, like object-contain.
+    // Too narrow for the scene (coins near the camera reach ~3.4 sideways): pull the camera back so it fits the width, like object-contain.
     state.camera.position.z = 12 * Math.max(1, 0.9 / (state.size.width / state.size.height))
-    // Same framing on every screen: the camera keeps the height, so one set of poster pictures fits all.
-    const scale = 1
-    const baseX = -0.55
+    const scale = mobile ? 1.5 : 1
+    const baseX = 0
+    const baseY = mobile ? -2.75 : 0
     tilt.current.y = lerp(tilt.current.y, lerp(-0.75, 0.3, p) + mouse.current.x * 0.12, 0.08)
     tilt.current.x = lerp(tilt.current.x, 0.12 - p * 0.12 + mouse.current.y * 0.06, 0.08)
     card.current!.rotation.set(tilt.current.x, tilt.current.y, 0)
-    card.current!.position.set(baseX, Math.sin(t * 0.8) * 0.08, 0)
+    card.current!.position.set(baseX, baseY + Math.sin(t * 0.8) * 0.08, 0)
     card.current!.scale.setScalar(scale)
-
-    coinGroup.current!.children.forEach((coin, i) => {
-      const u = coin.userData
-      const fly = clamp((p - 0.18 - i * 0.02) / 0.2, 0, 1)
-      const e = fly * fly * (3 - 2 * fly)
-      const fx = baseX + u.sx * scale
-      const fy = u.sy * scale + Math.sin(t * 0.7 + u.ph) * 0.2
-      coin.position.set(lerp(fx, baseX, e), lerp(fy, 0, e), lerp(u.sz, 0.3, e))
-      coin.scale.setScalar(scale * (1 - e * 0.95))
-      coin.visible = e < 0.98
-      coin.rotation.x = 1.25 + Math.sin(t * 0.8 + u.ph) * 0.35
-      coin.rotation.z = Math.sin(t * 0.5 + u.ph) * 0.5
-    })
+    Object.assign(pose.current, { p, t, baseX, baseY, scale, mobile, mouse: mouse.current })
 
     const grow = clamp((p - 0.68) / 0.15, 0, 1)
     bars.current!.children.forEach((bar, i) => {
       const h = bar.userData.h as number
-      bar.visible = grow > 0
+      bar.visible = grow > 0 && !mobile
       bar.scale.set(scale, Math.max(0.01, grow) * scale, scale)
-      bar.position.set(baseX + (1.9 + i * 0.55) * scale, (-1.8 + (h * grow) / 2) * scale, 0.6)
+      // Close to the phone (its edge is at 1.25): further out the right bar was cut on narrow boxes (1024 px).
+      bar.position.set(baseX + (1.6 + i * 0.5) * scale, (-1.8 + (h * grow) / 2) * scale, 0.6)
     })
 
-    // Quality steps by FPS in two-second windows: first DPR 1, then the picture instead of 3D.
-    const f = frames.current
-    if (!f.ready && ++f.shown === 3) {
-      f.ready = true
-      onReady()
-    }
-    if (capture) return
-    // A long frame means the tab was hidden or the page stalled, not a slow GPU: start the window again.
-    if (delta > 0.25) {
-      f.count = 0
-      f.time = 0
-      return
-    }
-    f.count++
-    f.time += delta
-    if (f.time >= 2) {
-      const fps = f.count / f.time
-      f.count = 0
-      f.time = 0
-      if (fps < minFps && f.degraded) onSlow()
-      else if (fps < 40 && !f.degraded) {
-        f.degraded = true
-        setDpr(1)
-      }
-    }
+    if (++shown.current === 3) onReady()
   })
 
   return (
@@ -470,7 +385,7 @@ function Rig({
       <group ref={card}>
         <mesh geometry={body}>
           {/* Standard, not physical with clearcoat: its shader compile was the longest task on a phone (perf-auditor). */}
-          <meshStandardMaterial color={0x343848} metalness={0.6} roughness={0.28} envMapIntensity={2.6} />
+          <meshStandardMaterial color={0x3a3e52} metalness={0.9} roughness={0.18} envMapIntensity={1.8} />
         </mesh>
         <mesh geometry={face} position-z={0.112}>
           <meshBasicMaterial map={screen.texture} toneMapped={false} />
@@ -479,11 +394,10 @@ function Rig({
           <meshStandardMaterial color={0xffffff} metalness={0} roughness={0.05} transparent opacity={0.06} envMapIntensity={2} />
         </mesh>
       </group>
-      <group ref={coinGroup}>
-        {coinMeshes.map((m, i) => (
-          <primitive key={i} object={m} />
-        ))}
-      </group>
+      {/* The card shows at once; coins join when the 42 KB model arrives. */}
+      <Suspense fallback={null}>
+        <Coins pose={pose} mobile={mobile} capture={capture} />
+      </Suspense>
       <group ref={bars}>
         {[
           [1.2, 0x1f7a52],
@@ -501,13 +415,13 @@ function Rig({
 }
 
 /**
- * The hero 3D scene: a screen card that turns with the scroll, coins that fly into it, bars that grow.
- * Loaded as its own chunk after the page is shown; the parent keeps the picture until `onReady`.
+ * The hero 3D scene: a screen card that turns with the scroll, Blender coins that fly into it, bars that grow.
+ * Loaded as its own chunk on the visitor's first action; the parent keeps the picture until `onReady`.
  */
 export default function HeroScene({
   progress,
   labels,
-  compact,
+  mobile,
   active,
   onReady,
   onFail,
@@ -515,7 +429,7 @@ export default function HeroScene({
 }: {
   progress: RefObject<number>
   labels: ScreenLabels
-  compact: boolean
+  mobile: boolean
   /** Keeps the drawn frame readable (scripts/capture-hero.mjs). */
   capture?: boolean
   active: boolean
@@ -523,22 +437,42 @@ export default function HeroScene({
   onFail: () => void
 }) {
   const font = useMemo(() => getComputedStyle(document.body).fontFamily, [])
+  // Sharp like the screen (max 2); if the first seconds run below 40 FPS: 1.5, then 1, then the pictures.
+  const [dpr, setDpr] = useState(() => Math.min(devicePixelRatio, 2))
   return (
     <Canvas
       aria-hidden
       tabIndex={-1}
       className="pointer-events-none"
       style={{ pointerEvents: "none" }}
-      flat
-      dpr={compact ? 1 : [1, 1.5]}
+      dpr={dpr}
       camera={{ position: [0, 0, 12], fov: 35, near: 0.1, far: 100 }}
       gl={{ antialias: true, alpha: true, powerPreference: "low-power", preserveDrawingBuffer: capture }}
       onCreated={({ gl, scene }) => {
+        gl.toneMapping = THREE.ACESFilmicToneMapping
+        gl.toneMappingExposure = 0.9
         scene.fog = new THREE.Fog(0x09090c, 12, 26)
         gl.domElement.addEventListener("webglcontextlost", onFail, { once: true })
       }}
     >
-      <Rig progress={progress} labels={labels} font={font} active={active} capture={capture} minFps={compact ? 30 : 24} onReady={onReady} onSlow={onFail} />
+      {!capture && (
+        <PerformanceMonitor
+          ms={200}
+          iterations={10}
+          bounds={(refresh) => [40, refresh > 90 ? 90 : 60]}
+          onDecline={() => {
+            if (dpr > 1.5) setDpr(1.5)
+            else if (dpr > 1) setDpr(1)
+            else onFail()
+          }}
+        />
+      )}
+      <Rig progress={progress} labels={labels} font={font} active={active} capture={capture} mobile={mobile} onReady={onReady} />
     </Canvas>
   )
+}
+
+/** Fetch the model once the poster is up (called by the hero when it decides to load 3D). */
+export function preloadCoins() {
+  useGLTF.preload(COINS_URL, DRACO_URL)
 }
