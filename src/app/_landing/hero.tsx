@@ -131,7 +131,7 @@ export function Hero({ screen, children }: { screen: Omit<ScreenLabels, "amount"
     <section ref={section} id="top" aria-labelledby="hero-title" className="relative h-[340vh]" data-hero-step={step} data-hero-mode={mode}>
       <div
         ref={sticky}
-        className="sticky top-header grid h-[calc(100svh-var(--spacing-header))] grid-rows-[52%_48%] overflow-hidden min-[900px]:grid-cols-2 min-[900px]:grid-rows-1"
+        className="sticky top-(--landing-header) grid h-[calc(100svh-var(--landing-header))] grid-rows-[52%_48%] overflow-hidden min-[900px]:grid-cols-2 min-[900px]:grid-rows-1"
       >
         {/* Scene: right half on a computer, top 52% on a phone. Hidden from screen readers. */}
         <div
@@ -147,13 +147,14 @@ export function Hero({ screen, children }: { screen: Omit<ScreenLabels, "amount"
               locale={locale}
               step={i}
               className={cn(
-                "transition-[opacity,filter] duration-400",
-                pictureStep !== i ? "opacity-0" : showScene && ready ? "opacity-0 blur-[6px]" : "opacity-100"
+                "transition-opacity duration-300",
+                // The live scene starts on the poster's frame, so a short fade is enough to hide the swap.
+                pictureStep !== i || (showScene && ready) ? "opacity-0" : "opacity-100"
               )}
             />
           ))}
           {showScene && (
-            <div className={cn("absolute inset-0 transition-opacity duration-400", ready ? "opacity-100" : "opacity-0")}>
+            <div className={cn("absolute inset-0 transition-opacity duration-300", ready ? "opacity-100" : "opacity-0")}>
               <HeroScene
                 progress={progress}
                 labels={labels}
@@ -215,8 +216,8 @@ export function Hero({ screen, children }: { screen: Omit<ScreenLabels, "amount"
 function HeroPicture({ locale, step, className }: { locale: Locale; step: number; className?: string }) {
   const lcp = step === 0
   const common = { alt: "", loading: lcp ? ("eager" as const) : ("lazy" as const), fetchPriority: lcp ? ("high" as const) : ("auto" as const) }
-  const desktop = getImageProps({ ...common, src: `/images/hero/${locale}-d-step-${step}.webp`, width: 900, height: 1000, sizes: "50vw" }).props
-  const phone = getImageProps({ ...common, src: `/images/hero/${locale}-m-step-${step}.webp`, width: 800, height: 842, sizes: "100vw" }).props
+  const desktop = getImageProps({ ...common, src: `/images/hero/v2/${locale}-d-step-${step}.webp`, width: 900, height: 1000, sizes: "50vw" }).props
+  const phone = getImageProps({ ...common, src: `/images/hero/v2/${locale}-m-step-${step}.webp`, width: 800, height: 842, sizes: "100vw" }).props
   return (
     <picture>
       <source media={`(min-width: ${MOBILE_MAX}px)`} srcSet={desktop.srcSet} sizes={desktop.sizes} />

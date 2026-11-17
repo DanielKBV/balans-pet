@@ -65,12 +65,12 @@ function Landing() {
     <>
       <Spotlight />
       <header className="sticky top-0 z-40 border-b border-transparent bg-background edge-on-scroll">
-        <div className="page-container flex h-header items-center gap-2">
+        <div className="page-container flex h-(--landing-header) items-center gap-2">
           <Link href="/" className="-ml-2 rounded-lg p-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
             {/* Phone: only the mark, so «Sign in» and the demo button fit at 360px. */}
-            <Logo className="max-sm:[&>span+span]:sr-only" />
+            <Logo size="lg" className="max-sm:[&>span+span]:sr-only" />
           </Link>
-          <nav aria-label={t("landing.nav.aria")} className="ml-4 hidden items-center gap-1 min-[900px]:flex">
+          <nav aria-label={t("landing.nav.aria")} className="ml-6 hidden items-center gap-1 min-[900px]:flex">
             {SECTIONS.map(({ id, label }) => (
               <a key={id} href={`#${id}`} className={buttonVariants({ variant: "ghost", className: "text-muted-foreground" })}>
                 {t(`landing.nav.${label}`)}

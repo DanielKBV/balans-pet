@@ -4,6 +4,14 @@
 
 /* Dark theme: inside .dark, unless a nested .light block opts back out (used by /design). */
 @custom-variant dark (&:where(.dark, .dark *):not(:where(.light, .light *)));
+/* Landing header height (DESIGN.md §13): roomier than the cabinet's 56px bar, the logo gets air above and below. */
+:root {
+  --landing-header: 4rem;
+  @media (width >= 900px) {
+    --landing-header: 4.5rem;
+  }
+}
+
 /* Landing hero on short phones: phone layout below 900 px and at most 760 px tall (360×640, Android 360×800 with the address bar). */
 @custom-variant short {
   @media (width < 900px) and (height <= 760px) {

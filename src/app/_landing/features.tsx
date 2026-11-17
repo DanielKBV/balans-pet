@@ -33,7 +33,7 @@ export function Features() {
   const current = sampleMonths().at(-1)!
 
   return (
-    <section id="features" aria-labelledby="features-title" className="page-container scroll-mt-header py-24 md:py-36">
+    <section id="features" aria-labelledby="features-title" className="page-container scroll-mt-(--landing-header) py-24 md:py-36">
       <SectionHeading id="features-title" kicker={t("kicker")} title={t("title")} />
       <ul className="mt-14 grid gap-4 lg:grid-cols-6">
         <Feature title={t("entryTitle")} text={t("entryText")} className="lg:col-span-4">

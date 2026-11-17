@@ -27,7 +27,7 @@ export function ProductWindow() {
   const today = todayInBishkek()
 
   return (
-    <section id="cabinet" aria-labelledby="cabinet-title" className="page-container scroll-mt-header pt-10 max-md:overflow-x-clip pb-24 md:pb-36">
+    <section id="cabinet" aria-labelledby="cabinet-title" className="page-container scroll-mt-(--landing-header) pt-10 max-md:overflow-x-clip pb-24 md:pb-36">
       <SectionHeading
         id="cabinet-title"
         kicker={t("landing.cabinet.kicker")}

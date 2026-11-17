@@ -35,9 +35,8 @@ const MOBILE_SLOTS: Slot[] = [
 ]
 const COIN_RADIUS = 0.55
 const FACE_Y = 0.085
-/** Coins appear one by one once the model is in: 80 ms apart, 500 ms each. */
-const APPEAR_GAP = 0.08
-const APPEAR_TIME = 0.5
+/** The live scene starts at the moment the posters were shot (capture time), so the swap poster → 3D is not seen. */
+const START_TIME = 1.5
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
@@ -178,7 +177,7 @@ function applyRoom(gl: THREE.WebGLRenderer, scene: THREE.Scene) {
 
 type CoinNodes = Record<string, THREE.Mesh>
 
-/** «Silver» from prototype v4. Each coin gets its own pair (they fade in one by one); the shader is shared. */
+/** «Silver» from prototype v4; the shader program is shared by all coins. */
 function coinMaterials() {
   return {
     body: new THREE.MeshStandardMaterial({ color: "#cfd1d6", metalness: 1, roughness: 0.22, envMapIntensity: 1.25 }),
@@ -214,21 +213,20 @@ function orient(coin: THREE.Object3D, ax: number, ay: number, az: number) {
 /** Shared state the card rig writes every frame and the coins read. */
 type Pose = { p: number; t: number; baseX: number; baseY: number; scale: number; mobile: boolean; mouse: { x: number; y: number } }
 
-function Coins({ pose, mobile, capture }: { pose: RefObject<Pose>; mobile: boolean; capture: boolean }) {
+/** Calls `onReady` once the coins have been drawn twice: only then the canvas replaces the poster. */
+function Coins({ pose, mobile, onReady }: { pose: RefObject<Pose>; mobile: boolean; onReady: () => void }) {
   const { nodes } = useGLTF(COINS_URL, DRACO_URL) as unknown as { nodes: CoinNodes }
   const slots = mobile ? MOBILE_SLOTS : DESKTOP_SLOTS
   const coins = useMemo(() => slots.map(([kind]) => buildCoin(nodes, kind)), [nodes, slots])
-  const born = useRef<number | null>(null)
+  const drawn = useRef(0)
 
   useEffect(
     () => () => coins.forEach((c) => (c.userData.materials as THREE.Material[]).forEach((m) => m.dispose())),
     [coins]
   )
 
-  useFrame((state) => {
+  useFrame(() => {
     const { p, t, baseX, baseY, scale, mouse } = pose.current!
-    born.current ??= state.clock.elapsedTime
-    const sinceLoad = state.clock.elapsedTime - born.current
     const wobble = 1
     const cs = mobile ? 1 : scale
     const targetY = mobile ? baseY + 2.6 : 0
@@ -256,20 +254,10 @@ function Coins({ pose, mobile, capture }: { pose: RefObject<Pose>; mobile: boole
         pz = 1.6
         shrink = 1 - a * 0.96
       }
-      // One by one after the model loads: scale 0.85 → 1 and opacity 0 → 1.
-      const k = capture ? 1 : clamp((sinceLoad - i * APPEAR_GAP) / APPEAR_TIME, 0, 1)
-      const appear = lerp(0.85, 1, ease(k))
-      for (const m of coin.userData.materials as THREE.MeshStandardMaterial[]) {
-        m.opacity = k
-        if (m.transparent !== k < 1) {
-          m.transparent = k < 1
-          m.needsUpdate = true
-        }
-      }
       coin.position.set(px, py, pz)
-      coin.scale.setScalar(cs * shrink * size * 0.85 * appear)
+      coin.scale.setScalar(cs * shrink * size * 0.85)
       // Hidden before it shrinks to a dot on the screen (a grey speck on a still frame).
-      coin.visible = shrink > 0.15 && k > 0
+      coin.visible = shrink > 0.15
       orient(
         coin,
         ax * (1 - e) + Math.sin(t * 0.55 + ph) * 0.12 * wobble + mouse.y * 0.12,
@@ -277,6 +265,7 @@ function Coins({ pose, mobile, capture }: { pose: RefObject<Pose>; mobile: boole
         az + Math.sin(t * 0.3 + ph) * 0.08 * wobble
       )
     })
+    if (++drawn.current === 2) onReady()
   })
 
   return (
@@ -314,7 +303,8 @@ function Rig({
   const bars = useRef<THREE.Group>(null)
   const mouse = useRef({ x: 0, y: 0 })
   const tilt = useRef({ x: 0, y: 0 })
-  const shown = useRef(0)
+  const started = useRef(false)
+  const smoothMouse = useRef({ x: 0, y: 0 })
   const pose = useRef<Pose>({ p: 0, t: 0, baseX: 0, baseY: 0, scale: 1, mobile, mouse: { x: 0, y: 0 } })
 
   const body = useMemo(() => {
@@ -352,18 +342,26 @@ function Rig({
     screen.draw(step, value)
 
     // Capture mode freezes the time, so the pictures of both languages show the coins in the same places.
-    const t = capture ? 1.5 : state.clock.elapsedTime
+    const t = START_TIME + (capture ? 0 : state.clock.elapsedTime)
     // Too narrow for the scene (coins near the camera reach ~3.4 sideways): pull the camera back so it fits the width, like object-contain.
     state.camera.position.z = 12 * Math.max(1, 0.9 / (state.size.width / state.size.height))
     const scale = mobile ? 1.5 : 1
     const baseX = 0
     const baseY = mobile ? -2.75 : 0
-    tilt.current.y = lerp(tilt.current.y, lerp(-0.75, 0.3, p) + mouse.current.x * 0.12, 0.08)
-    tilt.current.x = lerp(tilt.current.x, 0.12 - p * 0.12 + mouse.current.y * 0.06, 0.08)
+    // The pointer leans in gently, so the first live frames match the poster (shot without a pointer).
+    smoothMouse.current.x = lerp(smoothMouse.current.x, mouse.current.x, 0.04)
+    smoothMouse.current.y = lerp(smoothMouse.current.y, mouse.current.y, 0.04)
+    const m = smoothMouse.current
+    const targetY = lerp(-0.75, 0.3, p) + m.x * 0.12
+    const targetX = 0.12 - p * 0.12 + m.y * 0.06
+    // First frame: straight to the pose (the poster's), afterwards follow it smoothly.
+    tilt.current.y = started.current ? lerp(tilt.current.y, targetY, 0.08) : targetY
+    tilt.current.x = started.current ? lerp(tilt.current.x, targetX, 0.08) : targetX
+    started.current = true
     card.current!.rotation.set(tilt.current.x, tilt.current.y, 0)
     card.current!.position.set(baseX, baseY + Math.sin(t * 0.8) * 0.08, 0)
     card.current!.scale.setScalar(scale)
-    Object.assign(pose.current, { p, t, baseX, baseY, scale, mobile, mouse: mouse.current })
+    Object.assign(pose.current, { p, t, baseX, baseY, scale, mobile, mouse: m })
 
     const grow = clamp((p - 0.68) / 0.15, 0, 1)
     bars.current!.children.forEach((bar, i) => {
@@ -374,7 +372,6 @@ function Rig({
       bar.position.set(baseX + (1.6 + i * 0.5) * scale, (-1.8 + (h * grow) / 2) * scale, 0.6)
     })
 
-    if (++shown.current === 3) onReady()
   })
 
   return (
@@ -394,9 +391,9 @@ function Rig({
           <meshStandardMaterial color={0xffffff} metalness={0} roughness={0.05} transparent opacity={0.06} envMapIntensity={2} />
         </mesh>
       </group>
-      {/* The card shows at once; coins join when the 42 KB model arrives. */}
+      {/* The canvas stays hidden behind the poster until the coins are in, then replaces it in one go. */}
       <Suspense fallback={null}>
-        <Coins pose={pose} mobile={mobile} capture={capture} />
+        <Coins pose={pose} mobile={mobile} onReady={onReady} />
       </Suspense>
       <group ref={bars}>
         {[

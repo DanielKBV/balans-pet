@@ -9,7 +9,7 @@ const card = "flex min-w-0 flex-col gap-3.5 rounded-2xl border bg-card p-6"
 export function Problem() {
   const t = useTranslations("landing.problem")
   return (
-    <section id="problem" aria-label={t("aria")} className="page-container scroll-mt-header py-24 md:py-36">
+    <section id="problem" aria-label={t("aria")} className="page-container scroll-mt-(--landing-header) py-24 md:py-36">
       <WordReveal
         text={t("phrase")}
         className="max-w-[20ch] text-statement"
