@@ -64,7 +64,7 @@ function MemberRow({ member, businessName }: { member: Member; businessName: str
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="min-w-0 font-medium break-words">{name}</span>
-          <Badge variant={member.role === "owner" ? "secondary" : "outline"}>
+          <Badge variant="outline" className={member.role === "owner" ? "text-foreground" : "text-muted-foreground"}>
             {member.role === "owner" ? t("team.owner") : t("team.employee")}
           </Badge>
         </div>

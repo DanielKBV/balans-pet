@@ -566,7 +566,7 @@ function CategoryFilter({
 
   return (
     <Select items={items} value={value || null} onValueChange={(next) => onChange((next as string | null) ?? "")}>
-      <SelectTrigger aria-label={t("operations.columnCategory")} className="w-full min-w-0">
+      <SelectTrigger aria-label={t("operations.columnCategory")} className="w-full min-w-0 gap-3">
         <SelectValue className="truncate" />
       </SelectTrigger>
       <SelectContent>

@@ -59,7 +59,8 @@ async function RoleBottomNav() {
 
 async function BusinessName() {
   const membership = await getMembership()
-  return <p className="min-w-0 truncate font-medium">{membership?.business.name}</p>
+  // Phone: up to two smaller lines; next to three header buttons one line cut the name early.
+  return <p className="min-w-0 font-medium max-sm:line-clamp-2 max-sm:text-small sm:truncate">{membership?.business.name}</p>
 }
 
 async function RequireBusiness({ children }: { children: ReactNode }) {

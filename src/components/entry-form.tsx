@@ -3,10 +3,11 @@
 import Link from "next/link"
 import { Controller, useForm, useWatch, type Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { AmountInput, formatAmountInput } from "@/components/amount-input"
+import type { Locale } from "@/i18n/config"
 import { DatePicker } from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { DialogFooter } from "@/components/ui/dialog"
@@ -62,11 +63,12 @@ export function EntryForm({
   successMessage?: string
 }) {
   const t = useTranslations()
+  const locale = useLocale() as Locale
   const form = useForm<EntryFormValues, unknown, EntryValues>({
     resolver: zodResolver(entrySchema(t)),
     // Editing opens the stored amount already grouped: «1 000».
     defaultValues: defaultValues
-      ? { ...defaultValues, amount: formatAmountInput(defaultValues.amount) }
+      ? { ...defaultValues, amount: formatAmountInput(defaultValues.amount, locale) }
       : { type: "income", amount: "", categoryId: "", date: today, comment: "" },
   })
   const type = useWatch({ control: form.control, name: "type" })

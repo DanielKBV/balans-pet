@@ -24,12 +24,15 @@ export function entrySchema(t: Translate) {
     type: z.enum(["income", "expense"], { error: t("entries.typeRequired") }),
     amount: z
       .string()
-      .transform((value) => value.replace(/s/g, ""))
+      .transform((value) => value.replace(/\s/g, ""))
+      // English groups thousands with commas («5,400»); only that exact pattern is unpacked,
+      // so «100,50» still reads as a decimal and gets «whole soms only».
+      .transform((value) => (/^\d{1,3}(,\d{3})+$/.test(value) ? value.replace(/,/g, "") : value))
       .pipe(
         z
           .string()
           .min(1, t("entries.amountRequired"))
-          .regex(/^d+$/, t("entries.wholeOnly"))
+          .regex(/^\d+$/, t("entries.wholeOnly"))
           .transform(Number)
           .pipe(z.number().min(1, t("entries.positive")).max(MAX_AMOUNT, t("entries.tooLarge")))
       ),

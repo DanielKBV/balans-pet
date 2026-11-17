@@ -38,7 +38,8 @@ export default function InvitePage({ params }: PageProps<"/invite/[code]">) {
 async function Invite({ params }: Pick<PageProps<"/invite/[code]">, "params">) {
   const t = await getTranslations()
   const { code } = await params
-  if (!z.uuid().safeParse(code).success) return <NotFound title={t("invite.notFoundTitle")} text={t("invite.notFoundText")} />
+  if (!z.uuid().safeParse(code).success)
+    return <NotFound title={t("invite.notFoundTitle")} text={t("invite.notFoundText")} home={t("notFound.home")} />
 
   const supabase = await createClient()
   const [{ data: info, error }, { data: auth }] = await Promise.all([
@@ -48,7 +49,7 @@ async function Invite({ params }: Pick<PageProps<"/invite/[code]">, "params">) {
   // Thrown errors show the shared error page with "Try again".
   if (error) throw new Error(error.message)
   const invite = (info as { business_name: string; status: InviteStatus }[])[0]
-  if (!invite) return <NotFound title={t("invite.notFoundTitle")} text={t("invite.notFoundText")} />
+  if (!invite) return <NotFound title={t("invite.notFoundTitle")} text={t("invite.notFoundText")} home={t("notFound.home")} />
 
   if (invite.status !== "active") {
     const { title, text } = CLOSED[invite.status]
@@ -104,8 +105,15 @@ function Message({ title, text, children }: { title: string; text: string; child
   )
 }
 
-function NotFound({ title, text }: { title: string; text: string }) {
-  return <Message title={title} text={text} />
+/** Not a dead end: the same «Home» button as the 404 page. */
+function NotFound({ title, text, home }: { title: string; text: string; home: string }) {
+  return (
+    <Message title={title} text={text}>
+      <Button className="w-full" render={<Link href="/" />} nativeButton={false}>
+        {home}
+      </Button>
+    </Message>
+  )
 }
 
 function InviteSkeleton() {

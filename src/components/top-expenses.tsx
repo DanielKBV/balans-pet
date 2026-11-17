@@ -22,11 +22,12 @@ export function TopExpenses({ items, limit = 5 }: { items: CategoryTotal[]; limi
         const share = total ? (row.total / total) * 100 : 0
         return (
           <li key={row.name} className="flex flex-col gap-1.5">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="line-clamp-2 min-w-0 break-words" title={row.name}>
+            {/* Narrow column (1024): the amount wraps under the name instead of squeezing it to «Зарп / лата». */}
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+              <span className="line-clamp-2 min-w-0 flex-1 basis-32 break-words" title={row.name}>
                 {row.name}
               </span>
-              <span className="shrink-0 tabular-nums">
+              <span className="ml-auto shrink-0 tabular-nums">
                 <span className="font-medium">{formatSom(row.total, locale)}</span>
                 <span className="ml-2 inline-block w-10 text-right text-small text-muted-foreground">
                   {formatShare(share, locale)}
