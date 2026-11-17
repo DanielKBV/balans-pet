@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
  * Before hydration and with reduced motion every word is lit, so the text is never left dim.
  */
 export function WordReveal({ text, className }: { text: string; className?: string }) {
-  const ref = useRef<HTMLParagraphElement>(null)
+  const ref = useRef<HTMLHeadingElement>(null)
   const words = text.split(/\s+/)
   const [lit, setLit] = useState(words.length)
 
@@ -39,12 +39,13 @@ export function WordReveal({ text, className }: { text: string; className?: stri
   }, [words.length])
 
   return (
-    <p ref={ref} className={className}>
+    // The section statement: an h2 between the h1 and the card h3s (visually it is just the phrase).
+    <h2 ref={ref} className={className}>
       {words.map((word, i) => (
         <span key={i}>
           <span className={cn("transition-colors duration-250", i < lit ? "text-foreground" : "text-faint")}>{word}</span>{" "}
         </span>
       ))}
-    </p>
+    </h2>
   )
 }

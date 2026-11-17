@@ -23,6 +23,7 @@ const geistMono = Geist_Mono({
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("meta");
   return {
+    metadataBase: new URL("https://balans-pet.vercel.app"),
     title: "Balans",
     description: t("description"),
     // iPhone: full screen from the home screen, name under the icon.

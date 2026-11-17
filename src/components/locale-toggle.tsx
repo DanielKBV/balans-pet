@@ -22,7 +22,17 @@ export function LocaleToggle() {
       aria-label={t("aria")}
       title={t("title")}
       disabled={isPending}
-      onClick={() => startTransition(() => setLocale(next))}
+      onClick={() =>
+        startTransition(async () => {
+          await setLocale(next)
+          // A ?lang= left in the address would bring the old language back on reload.
+          const url = new URL(window.location.href)
+          if (url.searchParams.has("lang")) {
+            url.searchParams.delete("lang")
+            window.history.replaceState(null, "", url)
+          }
+        })
+      }
       className="text-small font-medium text-muted-foreground"
     >
       {isPending ? <Spinner className="size-5" /> : next.toUpperCase()}

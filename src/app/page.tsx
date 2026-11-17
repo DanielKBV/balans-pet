@@ -1,16 +1,18 @@
-import type { Viewport } from "next"
+import type { Metadata, Viewport } from "next"
 import Link from "next/link"
 import { connection } from "next/server"
 import { useLocale, useTranslations } from "next-intl"
+import { getTranslations } from "next-intl/server"
 
 import { LocaleToggle } from "@/components/locale-toggle"
 import { Logo } from "@/components/logo"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { Locale } from "@/i18n/config"
+import { isLocale, type Locale } from "@/i18n/config"
 import { formatChange } from "@/lib/format"
 import { currentMonth, monthName } from "@/lib/month"
 import { AuthorCard } from "./_landing/author-card"
+import { CONTACTS } from "./_landing/links"
 import { Features } from "./_landing/features"
 import { Hero } from "./_landing/hero"
 import { Magnetic } from "./_landing/magnetic"
@@ -32,6 +34,37 @@ const SECTIONS = [
 
 const footerLink =
   "inline-flex min-h-11 items-center rounded-sm underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+
+// Title and description follow the page language. Link preview: ?lang= picks the language
+// (the RU resume links to /?lang=ru); the clean address is always English.
+export async function generateMetadata({ searchParams }: PageProps<"/">): Promise<Metadata> {
+  const param = (await searchParams).lang
+  const lang: Locale = isLocale(param) ? param : "en"
+  const page = await getTranslations("meta")
+  const t = await getTranslations({ locale: lang, namespace: "meta" })
+  const title = t("manifestName")
+  const description = t("description")
+  const image = `/og?lang=${lang}`
+  return {
+    title: { absolute: page("manifestName") },
+    description: page("description"),
+    // The clean address picks the language by the visitor; ?lang= pins it.
+    alternates: {
+      canonical: isLocale(param) ? `/?lang=${param}` : "/",
+      languages: { en: "/?lang=en", ru: "/?lang=ru", "x-default": "/" },
+    },
+    openGraph: {
+      type: "website",
+      siteName: "Balans",
+      url: lang === "ru" ? "/?lang=ru" : "/",
+      title,
+      description,
+      locale: lang === "ru" ? "ru_RU" : "en_US",
+      images: [{ url: image, width: 1200, height: 630, alt: t("ogAlt") }],
+    },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
+  }
+}
 
 // Per-request by design (see Home): opt out of the dev-only instant-navigation check
 // (node_modules/next/dist/docs/01-app/02-guides/adopting-partial-prefetching.md).
@@ -61,8 +94,29 @@ function Landing() {
     profitTitle: t("dashboard.profitFor", { month: monthName(current.month, locale) }),
     profitChange: `↗ ${formatChange(changePercent(profit, previous.income - previous.expense), locale)} ${t("dashboard.vsLastMonth")}`,
   }
+  // Structured data for search engines: what the site is and who built it.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Balans",
+    url: "https://balans-pet.vercel.app",
+    description: t("meta.description"),
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    inLanguage: locale,
+    author: {
+      "@type": "Person",
+      name: t("landing.author.name"),
+      url: CONTACTS.github.href,
+      sameAs: [CONTACTS.linkedin.href, CONTACTS.telegram.href],
+    },
+  }
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       <Spotlight />
       <header className="sticky top-0 z-40 border-b border-transparent bg-background edge-on-scroll">
         <div className="page-container flex h-(--landing-header) items-center gap-2">

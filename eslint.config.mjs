@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     ".claude/**",
     // Draco decoder copied from three/examples (vendor build, served for the hero coins model).
     "public/draco/**",
+    // Design reference for the link preview (copied into src/app/og), not part of the app.
+    "docs/launch/og/**",
   ]),
 ]);
 

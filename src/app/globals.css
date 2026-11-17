@@ -256,7 +256,8 @@
   --elevation-dialog: 0 16px 40px -8px oklch(0 0 0 / 0.6);
   --elevation-showcase:
     0 60px 120px -40px color-mix(in oklch, var(--primary) 30%, transparent), 0 30px 80px oklch(0 0 0 / 0.75);
-  --faint: oklch(0.31 0.008 270);
+  /* 3.3:1 on --background: the unlit words stay readable (large text needs 3:1). */
+  --faint: oklch(0.51 0.008 270);
   --elevation-cta: 0 0 0 6px oklch(1 0 0 / 0.07), 0 18px 50px -10px color-mix(in oklch, var(--primary) 40%, transparent);
   --elevation-highlight: inset 0 1px 0 oklch(1 0 0 / 0.07);
 }

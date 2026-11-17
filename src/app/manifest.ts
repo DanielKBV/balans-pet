@@ -1,12 +1,14 @@
 import type { MetadataRoute } from "next"
+import { getLocale, getTranslations } from "next-intl/server"
 
-/** Install on a phone: name, icons, full screen. Colors match the light theme (`--background`, logo). */
-export default function manifest(): MetadataRoute.Manifest {
+/** Install on a phone: name, icons, full screen, in the visitor's language. Colors match the light theme (`--background`, logo). */
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const t = await getTranslations("meta")
   return {
-    name: "Balans — доходы и расходы бизнеса",
+    name: t("manifestName"),
     short_name: "Balans",
-    description: "Онлайн-тетрадь доходов и расходов для небольшого бизнеса",
-    lang: "ru",
+    description: t("description"),
+    lang: await getLocale(),
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",

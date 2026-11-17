@@ -7,7 +7,7 @@ import { LoginForm } from "./login-form"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth")
-  return { title: t("metaTitle") }
+  return { title: t("metaTitle"), description: t("metaDescription") }
 }
 
 export default function LoginPage() {

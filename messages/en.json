@@ -1,7 +1,8 @@
 {
   "meta": {
     "description": "A simple online ledger of income and expenses for small service businesses",
-    "manifestName": "Balans — business income and expenses"
+    "manifestName": "Balans — business income and expenses",
+    "ogAlt": "Balans: how much did you make this month? Profit, income and expenses on a phone screen"
   },
   "common": {
     "skipToContent": "Skip to content",
@@ -155,6 +156,7 @@
   },
   "auth": {
     "metaTitle": "Sign in · Balans",
+    "metaDescription": "Sign in to Balans with email or Google, or create an account for your business.",
     "titleSignin": "Sign in to Balans",
     "titleSignup": "Create your account",
     "titleForgot": "Reset password",
@@ -249,6 +251,7 @@
   },
   "privacy": {
     "metaTitle": "Privacy Policy · Balans",
+    "metaDescription": "What data Balans stores, what it's used for and how to delete it.",
     "title": "Privacy Policy",
     "updated": "Updated Nov 15, 2026",
     "intro": "Balans is a learning pet project: an online ledger of income and expenses for small businesses. Here is a short summary of what data it stores and how that data is used.",

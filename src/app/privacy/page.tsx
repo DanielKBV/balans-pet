@@ -8,7 +8,7 @@ import { Logo } from "@/components/logo"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("privacy")
-  return { title: t("metaTitle") }
+  return { title: t("metaTitle"), description: t("metaDescription") }
 }
 
 const ISSUES_URL = "https://github.com/DanielKBV/balans-pet/issues"
