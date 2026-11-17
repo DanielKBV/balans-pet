@@ -5,6 +5,7 @@ import { connection } from "next/server"
 import { LocaleToggle } from "@/components/locale-toggle"
 import { Logo } from "@/components/logo"
 import { SignOutIconButton } from "@/components/sign-out-button"
+import { GuestBackdrop } from "@/components/guest-backdrop"
 import { Card } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 
@@ -12,6 +13,7 @@ import { createClient } from "@/lib/supabase/server"
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <>
+      <GuestBackdrop />
       <header className="border-b">
         <div className="page-container flex h-header items-center justify-between gap-4">
           {/* A signed-in person goes from «/» to the cabinet (proxy). */}

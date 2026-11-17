@@ -4,19 +4,7 @@ import { useEffect, useMemo, useRef, type RefObject } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
-/** Texts and numbers painted on the screen card; prepared on the server in the visitor's language. */
-export type ScreenLabels = {
-  brand: string
-  today: string
-  newEntry: string
-  income: string
-  expense: string
-  chips: [string, string, string]
-  save: string
-  profitTitle: string
-  profitChange: string
-  amount: (value: number) => string
-}
+import { stepOf, type ScreenLabels } from "./hero-shared"
 
 const AMOUNT = 5_400
 const PROFIT = 142_800
@@ -33,7 +21,6 @@ const HERO_COINS: CoinKind[] = ["som", "usd", "b", "eur", "som", "btc", "rub"]
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
-export const stepOf = (p: number) => (p < 0.3 ? 0 : p < 0.66 ? 1 : 2)
 
 /* ---------- shapes ---------- */
 
@@ -341,6 +328,7 @@ function Rig({
   font,
   active,
   capture,
+  minFps,
   onReady,
   onSlow,
 }: {
@@ -350,6 +338,8 @@ function Rig({
   active: boolean
   /** Capture mode: no quality steps, the slow software renderer must not swap the scene for pictures. */
   capture: boolean
+  /** Below this, after DPR 1, the scene gives way to the pictures. */
+  minFps: number
   onReady: () => void
   onSlow: () => void
 }) {
@@ -369,7 +359,7 @@ function Rig({
       bevelEnabled: true,
       bevelThickness: 0.06,
       bevelSize: 0.06,
-      bevelSegments: 8,
+      bevelSegments: 3,
       curveSegments: 16,
     })
     g.translate(0, 0, -0.05)
@@ -463,7 +453,7 @@ function Rig({
       const fps = f.count / f.time
       f.count = 0
       f.time = 0
-      if (fps < 24 && f.degraded) onSlow()
+      if (fps < minFps && f.degraded) onSlow()
       else if (fps < 40 && !f.degraded) {
         f.degraded = true
         setDpr(1)
@@ -478,13 +468,14 @@ function Rig({
       <pointLight position={[-6, -2, 4]} color={0x6e6cff} intensity={40} distance={30} />
       <group ref={card}>
         <mesh geometry={body}>
-          <meshPhysicalMaterial color={0x1c1e28} metalness={0.85} roughness={0.22} clearcoat={1} clearcoatRoughness={0.08} envMapIntensity={2.2} />
+          {/* Standard, not physical with clearcoat: its shader compile was the longest task on a phone (perf-auditor). */}
+          <meshStandardMaterial color={0x343848} metalness={0.6} roughness={0.28} envMapIntensity={2.6} />
         </mesh>
         <mesh geometry={face} position-z={0.112}>
           <meshBasicMaterial map={screen.texture} toneMapped={false} />
         </mesh>
         <mesh geometry={face} position-z={0.116}>
-          <meshPhysicalMaterial color={0xffffff} metalness={0} roughness={0.05} transparent opacity={0.06} envMapIntensity={2} />
+          <meshStandardMaterial color={0xffffff} metalness={0} roughness={0.05} transparent opacity={0.06} envMapIntensity={2} />
         </mesh>
       </group>
       <group ref={coinGroup}>
@@ -546,7 +537,7 @@ export default function HeroScene({
         gl.domElement.addEventListener("webglcontextlost", onFail, { once: true })
       }}
     >
-      <Rig progress={progress} labels={labels} font={font} active={active} capture={capture} onReady={onReady} onSlow={onFail} />
+      <Rig progress={progress} labels={labels} font={font} active={active} capture={capture} minFps={compact ? 30 : 24} onReady={onReady} onSlow={onFail} />
     </Canvas>
   )
 }

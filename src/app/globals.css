@@ -649,6 +649,19 @@
   }
 }
 
+/* Guest pages background (<GuestBackdrop>): a slow drift, one cycle ≥ 20s (DESIGN.md §13). Phones get smaller items. */
+.guest-float {
+  translate: -50% -50%;
+  animation: guest-float 26s ease-in-out infinite alternate;
+}
+@media (width < 48rem) {
+  .guest-float { scale: 0.6; }
+}
+@keyframes guest-float {
+  from { transform: translate3d(0, -14px, 0) rotate(-8deg); }
+  to { transform: translate3d(0, 14px, 0) rotate(8deg); }
+}
+
 /* Reduced motion: landing bento shows its final state instead of the starting one. */
 @media (prefers-reduced-motion: reduce) {
   .lp-share { transform: scaleX(var(--w)); }

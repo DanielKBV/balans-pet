@@ -9,7 +9,7 @@ import type { Locale } from "@/i18n/config"
 import { formatSom } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { DemoButton } from "../demo/demo-button"
-import { stepOf, type ScreenLabels } from "./hero-scene"
+import { stepOf, type ScreenLabels } from "./hero-shared"
 import { PRIMARY_PILL } from "./styles"
 
 const HeroScene = dynamic(() => import("./hero-scene"), { ssr: false })
@@ -80,19 +80,21 @@ export function Hero({ screen, children }: { screen: Omit<ScreenLabels, "amount"
     const onVisibility = () => setActive(!document.hidden && element.getBoundingClientRect().bottom > 0)
     document.addEventListener("visibilitychange", onVisibility)
 
-    let idle = 0
+    // The scene (three.js, ~240 KB) loads on the visitor's first scroll, touch, key or mouse move after `load`:
+    // the hero is a scroll story, so it is ready by the time step 1 comes, and the first screen pays nothing for it.
+    const WAKE = ["scroll", "pointermove", "pointerdown", "keydown", "wheel", "touchstart"] as const
+    const wake = () => {
+      WAKE.forEach((type) => removeEventListener(type, wake))
+      setMode("3d")
+    }
+    const listen = () => WAKE.forEach((type) => addEventListener(type, wake, { passive: true, once: true }))
     const choose = requestAnimationFrame(() => {
       if (fixed !== null) {
         setFrozen(Number(fixed))
         setMode("3d")
       } else if (shouldSkip3D()) setMode("pictures")
-      else {
-      const start = () => {
-        idle = "requestIdleCallback" in window ? requestIdleCallback(() => setMode("3d"), { timeout: 2500 }) : Number(globalThis.setTimeout(() => setMode("3d"), 1200))
-      }
-      if (document.readyState === "complete") start()
-      else addEventListener("load", start, { once: true })
-      }
+      else if (document.readyState === "complete") listen()
+      else addEventListener("load", listen, { once: true })
     })
 
     return () => {
@@ -101,10 +103,10 @@ export function Hero({ screen, children }: { screen: Omit<ScreenLabels, "amount"
       cancelAnimationFrame(choose)
       removeEventListener("scroll", onScroll)
       removeEventListener("resize", onResize)
+      removeEventListener("load", listen)
+      WAKE.forEach((type) => removeEventListener(type, wake))
       seen.disconnect()
       document.removeEventListener("visibilitychange", onVisibility)
-      if ("cancelIdleCallback" in window) cancelIdleCallback(idle)
-      clearTimeout(idle)
     }
   }, [])
 
@@ -121,14 +123,17 @@ export function Hero({ screen, children }: { screen: Omit<ScreenLabels, "amount"
         {/* Scene: right half on a computer, top 52% on a phone. Hidden from screen readers. */}
         <div aria-hidden data-hero-scene className="relative row-start-1 overflow-hidden lg:col-start-2">
           <div aria-hidden className="absolute top-1/2 left-1/2 size-[min(36rem,90%)] -translate-1/2 bg-glow" />
-          {[0, 1, 2].map((i) => (
+          {/* Steps 1 and 2 only in the picture mode: otherwise they would share the network with the LCP picture. */}
+          {(mode === "pictures" ? [0, 1, 2] : [0]).map((i) => (
             <Image
               key={i}
               src={`/images/hero/${locale}-step-${i}.webp`}
               alt=""
               width={900}
               height={1000}
-              priority={i === 0}
+              // The LCP picture: high priority from the HTML itself (Next 16 deprecated `priority`).
+              loading={i === 0 ? "eager" : "lazy"}
+              fetchPriority={i === 0 ? "high" : "auto"}
               sizes="(min-width: 1024px) 50vw, 100vw"
               className={cn(
                 "absolute inset-0 size-full object-contain transition-opacity duration-500",
