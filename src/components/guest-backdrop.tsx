@@ -1,61 +1,62 @@
+import type { CSSProperties } from "react"
+
 import { cn } from "@/lib/utils"
 
-type Item = { kind: "som" | "b" | "income" | "expense"; size: number; left: string; top: string; time: number; delay: number; phone?: boolean }
+type Coin = {
+  name: "som" | "usd" | "eur" | "rub" | "btc" | "b" | "som-far"
+  size: number
+  left: string
+  top: string
+  tilt: number
+  time: number
+  delay: number
+  /** Blurred and dimmed: further away. */
+  far?: boolean
+  /** Shown on phones too (smaller, at the edges); the rest only from 768px. */
+  phone?: { left: string; top: string } | true
+}
 
 /**
- * Slow floating coins with the som sign, a «B» tile and two bars behind the card of the guest pages
- * (sign-in, new password, invite, onboarding, 404, errors): motifs of the landing hero, drawn in SVG + CSS.
+ * Silver coins of the landing (the same Blender render) slowly drifting at the edges of the guest pages
+ * (sign-in, new password, invite, onboarding, 404, errors), with a soft indigo glow behind the card.
  * Pure server markup, no JS. Hidden from screen readers, never takes clicks, still with reduced motion.
- * Items marked `phone` stay at the edges on narrow screens; the rest show from 768px.
  */
-const ITEMS: Item[] = [
-  { kind: "som", size: 88, left: "7%", top: "16%", time: 26, delay: 0, phone: true },
-  { kind: "b", size: 60, left: "86%", top: "12%", time: 30, delay: -8, phone: true },
-  { kind: "som", size: 56, left: "88%", top: "62%", time: 24, delay: -4 },
-  { kind: "income", size: 92, left: "13%", top: "66%", time: 32, delay: -12 },
-  { kind: "expense", size: 64, left: "76%", top: "82%", time: 28, delay: -16, phone: true },
-  { kind: "som", size: 44, left: "4%", top: "88%", time: 34, delay: -20, phone: true },
+const COINS: Coin[] = [
+  { name: "som", size: 150, left: "5%", top: "12%", tilt: -8, time: 24, delay: 0, phone: { left: "5%", top: "8%" } },
+  { name: "eur", size: 80, left: "26%", top: "6%", tilt: 0, time: 30, delay: -6, far: true },
+  { name: "usd", size: 140, left: "80%", top: "14%", tilt: 10, time: 26, delay: -3, phone: { left: "78%", top: "8%" } },
+  { name: "rub", size: 90, left: "70%", top: "70%", tilt: 0, time: 28, delay: -12, far: true },
+  { name: "b", size: 76, left: "12%", top: "60%", tilt: 6, time: 20, delay: -9 },
+  { name: "btc", size: 150, left: "84%", top: "68%", tilt: -6, time: 22, delay: -15, phone: { left: "64%", top: "84%" } },
+  { name: "som-far", size: 96, left: "3%", top: "84%", tilt: 0, time: 18, delay: -4, far: true, phone: true },
 ]
-
-function Shape({ kind }: { kind: Item["kind"] }) {
-  if (kind === "som")
-    return (
-      <svg viewBox="0 0 100 100" className="size-full">
-        <circle cx="50" cy="50" r="47" className="fill-card stroke-border" strokeWidth="2" />
-        <circle cx="50" cy="50" r="39" fill="none" className="stroke-border" strokeWidth="1.5" strokeDasharray="2 4" />
-        {/* The som sign: «С» with a bar under it. */}
-        <path d="M61 34A17 17 0 1 0 61 60" fill="none" className="stroke-subtle-foreground" strokeWidth="5" />
-        <rect x="32" y="66" width="36" height="5" className="fill-subtle-foreground" />
-      </svg>
-    )
-  if (kind === "b")
-    return (
-      <span className="grid size-full place-items-center rounded-[22%] border border-primary/30 bg-primary-subtle text-heading font-semibold text-primary-text">
-        B
-      </span>
-    )
-  return <span className={cn("block h-full w-[34%] rounded-md opacity-40", kind === "income" ? "bg-income" : "bg-expense")} />
-}
 
 export function GuestBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {ITEMS.map((item, i) => (
-        <div
-          key={i}
-          className={cn("guest-float absolute opacity-60", !item.phone && "max-md:hidden")}
-          style={{
-            left: item.left,
-            top: item.top,
-            width: item.size,
-            height: item.size,
-            animationDuration: `${item.time}s`,
-            animationDelay: `${item.delay}s`,
-          }}
-        >
-          <Shape kind={item.kind} />
-        </div>
-      ))}
+      <div className="guest-glow absolute inset-0" />
+      {COINS.map((coin) => {
+        const phone = typeof coin.phone === "object" ? coin.phone : { left: coin.left, top: coin.top }
+        return (
+          <div
+            key={coin.name}
+            className={cn("guest-coin absolute", coin.far && "guest-coin-far", !coin.phone && "max-md:hidden")}
+            style={
+              {
+                "--s": `${coin.size}px`,
+                "--x": coin.left,
+                "--y": coin.top,
+                "--xm": phone.left,
+                "--ym": phone.top,
+                "--r": `${coin.tilt}deg`,
+                backgroundImage: `url(/images/guest/coin-${coin.name}.webp)`,
+                animationDuration: `${coin.time}s`,
+                animationDelay: `${coin.delay}s`,
+              } as CSSProperties
+            }
+          />
+        )
+      })}
     </div>
   )
 }

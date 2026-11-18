@@ -1,5 +1,5 @@
 // Shoots the hero 3D scene into the pictures the landing shows before (and instead of) WebGL:
-// public/images/hero/v2/<lang>-d-step-<0|1|2>.webp (computer, 900×1000) and <lang>-m-step-<0|1|2>.webp (phone layout
+// public/images/hero/v3/<lang>-d-step-<0|1|2>.webp (computer, 900×1000) and <lang>-m-step-<0|1|2>.webp (phone layout
 // below 900 px, 800×842), transparent.
 // Needs a running server: BASE_URL=http://localhost:3000 node scripts/capture-hero.mjs
 // The page freezes the scroll progress with ?heroP=… (see app/_landing/hero.tsx).
@@ -11,7 +11,7 @@ const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
 // Step 0 at the very top (where the live scene starts), then the middle of steps 1 and 2.
 const STEPS = [0, 0.6, 0.97];
 // Versioned folder: a new set never collides with images cached under the old URLs (Next, Vercel, browsers).
-const OUT = "public/images/hero/v2";
+const OUT = "public/images/hero/v3";
 
 await mkdir(OUT, { recursive: true });
 const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });

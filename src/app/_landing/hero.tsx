@@ -216,8 +216,8 @@ export function Hero({ screen, children }: { screen: Omit<ScreenLabels, "amount"
 function HeroPicture({ locale, step, className }: { locale: Locale; step: number; className?: string }) {
   const lcp = step === 0
   const common = { alt: "", loading: lcp ? ("eager" as const) : ("lazy" as const), fetchPriority: lcp ? ("high" as const) : ("auto" as const) }
-  const desktop = getImageProps({ ...common, src: `/images/hero/v2/${locale}-d-step-${step}.webp`, width: 900, height: 1000, sizes: "50vw" }).props
-  const phone = getImageProps({ ...common, src: `/images/hero/v2/${locale}-m-step-${step}.webp`, width: 800, height: 842, sizes: "100vw" }).props
+  const desktop = getImageProps({ ...common, src: `/images/hero/v3/${locale}-d-step-${step}.webp`, width: 900, height: 1000, sizes: "50vw" }).props
+  const phone = getImageProps({ ...common, src: `/images/hero/v3/${locale}-m-step-${step}.webp`, width: 800, height: 842, sizes: "100vw" }).props
   return (
     <picture>
       <source media={`(min-width: ${MOBILE_MAX}px)`} srcSet={desktop.srcSet} sizes={desktop.sizes} />
