@@ -70,9 +70,9 @@ Landing page, mobile, production build (`next start`), November 2026:
 
 | Accessibility | Best Practices | SEO | Performance |
 |---|---|---|---|
-| 100 | 100 | 100 | 89 |
+| 100 | 100 | 100 | 94 |
 
-Performance is the median of 3 runs with real CPU throttling (`--throttling-method=devtools`): LCP 2.2 s, CLS 0. In Lighthouse's default simulated mode the same page scores 67 (LCP 3.7 s). The 3D isn't part of these numbers: it isn't loaded until the visitor interacts.
+Performance is the median of 3 runs with real CPU throttling (`--throttling-method=devtools`): LCP 2.2 s, TBT 181 ms, CLS 0. In Lighthouse's default simulated mode the same page scores 76 (LCP 3.7 s): what remains is React hydration of the landing. The 3D isn't part of these numbers: it isn't loaded until the visitor interacts.
 
 ## Run locally
 
